@@ -1,6 +1,6 @@
 const pages = [
   {
-    title: "Oi, meu amor",
+    title: "Oi",
     text: "Preparei uma coisinha pequena, mas feita com todo cuidado.",
     options: ["Continuar", "Respirar"],
   },
