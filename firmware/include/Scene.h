@@ -4,9 +4,8 @@
 
 enum class SceneAction {
   None,
-  Advance,
-  ChooseYes,
-  ChooseNo,
+  Navigate,
+  Confirm,
   LockDevice,
   Finish,
 };
@@ -20,4 +19,3 @@ struct Scene {
   const char* yesNext;
   const char* noNext;
 };
-

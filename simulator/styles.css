@@ -105,7 +105,7 @@ h1 {
 
 .controls {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   margin-top: 18px;
 }
@@ -129,7 +129,19 @@ button:disabled {
   opacity: 0.45;
 }
 
+.connection-status {
+  min-height: 18px;
+  margin: 12px 0 0;
+  color: #9bd0bb;
+  font-size: 13px;
+  text-align: center;
+}
+
 @media (max-width: 420px) {
+  .controls {
+    grid-template-columns: 1fr;
+  }
+
   .message {
     font-size: 16px;
   }

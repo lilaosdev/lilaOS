@@ -1,79 +1,165 @@
 #include <Arduino.h>
 #include "AppConfig.h"
 #include "Devices.h"
-#include "Scene.h"
 
 namespace {
 DisplayDevice display;
 AudioDevice audio;
 ButtonInput buttons;
 
-struct ChoicePage {
-  const char* title;
-  const char* body;
-  const char* leftLabel;
-  const char* rightLabel;
+struct DialogStep {
+  const char* speaker;
+  const char* text;
+  bool hasQuestion;
+  const char* firstOption;
+  const char* secondOption;
 };
 
-ChoicePage pages[] = {
+DialogStep dialog[] = {
   {
-    "Oi",
-    "Preparei uma coisinha pequena, mas feita com todo cuidado.",
-    "Continuar",
-    "Respirar"
+    "SISTEMA",
+    "Inicializacao",
+    false,
+    "",
+    ""
   },
   {
-    "Prometo ser breve",
-    "So preciso de mais alguns cliques antes da pergunta importante.",
-    "Anterior",
-    "Proxima"
+    "EU",
+    "Dialogooooooooooooooooooooooooo 1",
+    false,
+    "",
+    ""
+  },
+  {
+    "EU",
+    "Dialogooooooooooooooooooooooooo 2",
+    false,
+    "",
+    ""
+  },
+  {
+    "PERGUNTA",
+    "Quer namorar comigo?",
+    true,
+    "Sim",
+    "Nao"
   },
 };
 
-constexpr uint8_t PAGE_COUNT = sizeof(pages) / sizeof(pages[0]);
-uint8_t currentPageIndex = 0;
+constexpr uint8_t DIALOG_COUNT = sizeof(dialog) / sizeof(dialog[0]);
+constexpr uint16_t TYPEWRITER_INTERVAL_MS = 45;
+
+uint8_t currentDialogIndex = 0;
 uint8_t selectedOption = 0;
+uint16_t visibleChars = 0;
+uint32_t lastTypewriterTick = 0;
+bool finalScreen = false;
 
 AppConfig loadRemoteConfig() {
-  // Mock inicial. Depois entra Wi-Fi + HTTP + cache em NVS.
   AppConfig config;
   config.mode = RemoteMode::Normal;
   config.variant = "default";
-  config.message = "config local";
+  config.message = "dialogo local";
   return config;
+}
+
+uint16_t textLength(const char* text) {
+  uint16_t length = 0;
+  while (text[length] != '\0') {
+    length++;
+  }
+
+  return length;
+}
+
+DialogStep& currentDialog() {
+  return dialog[currentDialogIndex];
+}
+
+bool isTextComplete() {
+  return visibleChars >= textLength(currentDialog().text);
 }
 
 void lockDevice(const String& reason) {
   audio.stop();
   display.showLocked(reason);
-
-  // Bloqueio reversivel: acorda periodicamente para permitir nova config remota.
   esp_sleep_enable_timer_wakeup(30ULL * 60ULL * 1000000ULL);
   esp_deep_sleep_start();
 }
 
-void renderCurrentPage() {
-  ChoicePage& page = pages[currentPageIndex];
-  display.showChoicePage(
-    currentPageIndex,
-    PAGE_COUNT,
-    page.title,
-    page.body,
-    page.leftLabel,
-    page.rightLabel,
-    selectedOption
+void renderDialog() {
+  DialogStep& step = currentDialog();
+  display.showDialog(
+    step.speaker,
+    step.text,
+    visibleChars,
+    step.hasQuestion,
+    step.firstOption,
+    step.secondOption,
+    selectedOption,
+    isTextComplete()
   );
 }
 
-void moveCursor() {
-  selectedOption++;
+void enterDialog(uint8_t index) {
+  currentDialogIndex = index;
+  selectedOption = 0;
+  visibleChars = 0;
+  lastTypewriterTick = millis();
+  renderDialog();
+}
 
-  if (selectedOption > 1) {
-    selectedOption = 0;
-    currentPageIndex = (currentPageIndex + 1) % PAGE_COUNT;
+void showFinalAnswer(const char* title, const char* body) {
+  finalScreen = true;
+  display.showEnding(0, 1, title, body);
+}
+
+void handleConfirm() {
+  if (finalScreen) {
+    return;
   }
 
-  renderCurrentPage();
+  if (!isTextComplete()) {
+    visibleChars = textLength(currentDialog().text);
+    renderDialog();
+    return;
+  }
+
+  if (currentDialog().hasQuestion) {
+    if (selectedOption == 0) {
+      showFinalAnswer("RESPOSTA", "Final SIM selecionado. :)");
+    } else {
+      showFinalAnswer("RESPOSTA", "Final NAO selecionado. Bloqueio reversivel entra depois.");
+    }
+
+    return;
+  }
+
+  if (currentDialogIndex + 1 < DIALOG_COUNT) {
+    enterDialog(currentDialogIndex + 1);
+  }
+}
+
+void handleNavigate() {
+  if (!finalScreen && currentDialog().hasQuestion && isTextComplete()) {
+    selectedOption = selectedOption == 0 ? 1 : 0;
+    renderDialog();
+  }
+}
+
+void updateTypewriter() {
+  if (finalScreen || isTextComplete()) {
+    return;
+  }
+
+  const uint32_t now = millis();
+  if (now - lastTypewriterTick < TYPEWRITER_INTERVAL_MS) {
+    return;
+  }
+
+  lastTypewriterTick = now;
+  visibleChars++;
+  renderDialog();
 }
 }
 
@@ -92,13 +178,18 @@ void setup() {
     lockDevice("bloqueado por configuracao remota");
   }
 
-  renderCurrentPage();
+  enterDialog(0);
 }
 
 void loop() {
-  if (buttons.readAction() == SceneAction::Advance) {
-    moveCursor();
+  SceneAction action = buttons.readAction();
+
+  if (action == SceneAction::Confirm) {
+    handleConfirm();
+  } else if (action == SceneAction::Navigate) {
+    handleNavigate();
   }
 
+  updateTypewriter();
   delay(20);
 }

@@ -8,14 +8,21 @@ public:
   void begin();
   void showBoot(const String& message);
   void showScene(const Scene& scene);
-  void showChoicePage(
+  void showDialog(
+    const char* speaker,
+    const char* text,
+    uint16_t visibleChars,
+    bool hasQuestion,
+    const char* firstOption,
+    const char* secondOption,
+    uint8_t selectedOption,
+    bool textComplete
+  );
+  void showEnding(
     uint8_t pageIndex,
     uint8_t pageCount,
     const char* title,
-    const char* body,
-    const char* leftLabel,
-    const char* rightLabel,
-    uint8_t selectedOption
+    const char* body
   );
   void showLocked(const String& message);
 };

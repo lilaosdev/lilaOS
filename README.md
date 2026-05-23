@@ -21,23 +21,23 @@ simulator/      Simulador web para testar o fluxo sem hardware
 
 ## Comeco recomendado
 
-1. Ajustar o roteiro em `docs/storyboard.md`.
-2. Testar o fluxo no simulador em `simulator/index.html`.
+1. Testar o motor de dialogo no Serial Monitor.
+2. Ajustar o roteiro em `docs/storyboard.md`.
 3. Definir hardware em `docs/hardware.md`.
-4. Adaptar os drivers reais no firmware quando os componentes chegarem.
+4. Adaptar o renderer serial para o display 240x240 quando ele chegar.
 
 ## Fluxo atual
 
-O firmware atual mostra duas paginas de texto e dois botoes desenhados na tela. Um unico botao fisico, inicialmente no GPIO 25 com `INPUT_PULLUP`, percorre:
+O firmware atual foca no motor de dialogo retro:
 
 ```text
-pagina 1 / botao esquerdo
-pagina 1 / botao direito
-pagina 2 / botao esquerdo
-pagina 2 / botao direito
+texto aparece aos poucos
+confirmar acelera ou avanca
+pergunta final mostra opcoes
+navegar alterna opcoes
 ```
 
-No simulador, o botao "Botao fisico" reproduz esse mesmo comportamento.
+Enquanto o display 240x240 nao chegou, o Serial Monitor funciona como display virtual. Veja `docs/dialog-engine.md`.
 
 ## Gravacao do firmware
 
@@ -48,7 +48,7 @@ Veja `docs/platformio.md` para o fluxo com PlatformIO.
 - ESP32 DevKit.
 - Display TFT SPI colorido, por exemplo ILI9341 240x320 ou ST7789 240x240.
 - Audio via DFPlayer Mini ou I2S DAC/amplificador.
-- 3 botoes: avancar, sim/esquerda, nao/direita.
+- 2 botoes: navegar e confirmar.
 
 ## Modo remoto
 
