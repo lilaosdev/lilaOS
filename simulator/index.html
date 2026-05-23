@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Simulador Pedido ESP32</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="device" aria-label="Simulador do dispositivo">
+        <div class="screen">
+          <div class="status">
+            <span id="page-id">pagina 1/2</span>
+            <span id="button-id">botao fisico GPIO25</span>
+          </div>
+          <div class="content">
+            <span class="eyebrow">pedido.exe</span>
+            <h1 id="title">Carregando...</h1>
+            <p id="text" class="message"></p>
+          </div>
+          <div class="display-actions" aria-label="Botoes desenhados na tela">
+            <span id="left-option" class="display-button"></span>
+            <span id="right-option" class="display-button"></span>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="physical-button" type="button">Botao fisico</button>
+          <button id="reset" type="button">Resetar</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

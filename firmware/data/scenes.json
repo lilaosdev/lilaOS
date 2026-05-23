@@ -1,0 +1,45 @@
+[
+  {
+    "id": "intro",
+    "text": "Tenho uma coisa pra te perguntar...",
+    "image": "images/intro.bmp",
+    "audio": "audio/intro.mp3",
+    "next": "memory_1"
+  },
+  {
+    "id": "memory_1",
+    "text": "Lembra daquele dia...?",
+    "image": "images/memory_1.bmp",
+    "audio": "audio/memory_1.mp3",
+    "next": "build_up"
+  },
+  {
+    "id": "build_up",
+    "text": "Entao eu pensei em fazer isso do meu jeito.",
+    "image": "gifs/build_up.gif",
+    "audio": "audio/build_up.mp3",
+    "next": "question"
+  },
+  {
+    "id": "question",
+    "text": "Quer namorar comigo?",
+    "image": "images/question.bmp",
+    "audio": "audio/question.mp3",
+    "yesNext": "yes",
+    "noNext": "no"
+  },
+  {
+    "id": "yes",
+    "text": "Eu sabia. :)",
+    "image": "gifs/yes.gif",
+    "audio": "audio/yes.mp3"
+  },
+  {
+    "id": "no",
+    "text": "Sistema emocional indisponivel.",
+    "image": "images/no.bmp",
+    "audio": "audio/no.mp3",
+    "lock": true
+  }
+]
+
