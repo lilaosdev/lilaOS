@@ -1,6 +1,6 @@
 # Pedido ESP32
 
-Projeto de dispositivo eletronico para um pedido de namoro usando ESP32, tela, audio e botoes.
+Projeto de dispositivo eletronico usando ESP32, tela, audio e botoes.
 
 ## Objetivo
 
@@ -42,6 +42,10 @@ Enquanto o display 240x240 nao chegou, o Serial Monitor funciona como display vi
 ## Gravacao do firmware
 
 Veja `docs/platformio.md` para o fluxo com PlatformIO.
+
+## Display
+
+O display alvo atual e ST7789 240x240 via LovyanGFX. Veja `docs/st7789-display.md`.
 
 ## Ideias de hardware
 
