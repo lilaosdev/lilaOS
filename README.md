@@ -1,4 +1,4 @@
-# Pedido ESP32
+# Projeto esp32
 
 Projeto de dispositivo eletronico usando ESP32, tela, audio e botoes.
 
