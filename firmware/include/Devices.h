@@ -16,7 +16,8 @@ public:
     const char* firstOption,
     const char* secondOption,
     uint8_t selectedOption,
-    bool textComplete
+    bool textComplete,
+    bool firstFrame = false
   );
   void showEnding(
     uint8_t pageIndex,
@@ -32,6 +33,9 @@ public:
   void begin();
   void play(const char* audioPath);
   void stop();
+  void update();
+  bool isPlaying();
+  void setGain(float gain);
 };
 
 class ButtonInput {

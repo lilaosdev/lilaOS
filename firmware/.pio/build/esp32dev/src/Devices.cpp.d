@@ -133,7 +133,21 @@
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_hw_support/include/soc/esp32/spiram.h \
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
- include/Scene.h include/DisplayPins.h \
+ include/Scene.h include/AudioPins.h include/DisplayPins.h \
+ include/InputPins.h \
+ C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/libraries/SPIFFS/src/SPIFFS.h \
+ C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h \
+ .pio/libdeps/esp32dev/ESP8266Audio/src/AudioFileSourceSPIFFS.h \
+ .pio/libdeps/esp32dev/ESP8266Audio/src/AudioFileSource.h \
+ .pio/libdeps/esp32dev/ESP8266Audio/src/AudioStatus.h \
+ .pio/libdeps/esp32dev/ESP8266Audio/src/AudioLogger.h \
+ .pio/libdeps/esp32dev/ESP8266Audio/src/AudioFileSourceFS.h \
+ .pio/libdeps/esp32dev/ESP8266Audio/src/AudioGeneratorMP3.h \
+ .pio/libdeps/esp32dev/ESP8266Audio/src/AudioGenerator.h \
+ .pio/libdeps/esp32dev/ESP8266Audio/src/AudioOutput.h \
+ .pio/libdeps/esp32dev/ESP8266Audio/src/libmad/config.h \
+ .pio/libdeps/esp32dev/ESP8266Audio/src/libmad/mad.h \
+ .pio/libdeps/esp32dev/ESP8266Audio/src/AudioOutputI2S.h \
  .pio/libdeps/esp32dev/LovyanGFX/src/LovyanGFX.hpp \
  .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1_init.hpp \
  .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/gitTagVersion.h \
@@ -171,16 +185,16 @@
  .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/platforms/esp32/../../misc/enum.hpp \
  .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/platforms/esp32/../common.hpp \
  .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/platforms/esp32/../esp32/common.hpp \
- .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/platforms/esp32/../esp32/../../misc/DataWrapper.hpp \
- .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/platforms/esp32/../esp32/../../misc/../../utility/pgmspace.h \
- .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/platforms/esp32/../esp32/../../../utility/result.hpp \
- .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/platforms/esp32/../esp32/../../../utility/../internal/memory.h \
+ c:\codes\esp32\firmware\.pio\libdeps\esp32dev\lovyangfx\src\lgfx\v1\misc\datawrapper.hpp \
+ c:\codes\esp32\firmware\.pio\libdeps\esp32dev\lovyangfx\src\lgfx\utility\pgmspace.h \
+ c:\codes\esp32\firmware\.pio\libdeps\esp32dev\lovyangfx\src\lgfx\utility\result.hpp \
+ c:\codes\esp32\firmware\.pio\libdeps\esp32dev\lovyangfx\src\lgfx\internal\memory.h \
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/soc/esp32/include/soc/i2s_reg.h \
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/libraries/SPI/src/SPI.h \
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-spi.h \
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src/Wire.h \
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal.h \
- .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/platforms/esp32/../../../utility/result.hpp \
+ c:\codes\esp32\firmware\.pio\libdeps\esp32dev\lovyangfx\src\lgfx\utility\result.hpp \
  .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/platforms/esp32/Bus_I2C.hpp \
  .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/platforms/esp32/Bus_Parallel8.hpp \
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/driver/include/driver/i2s.h \
@@ -253,7 +267,7 @@
  .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/touch/Touch_FT5x06.hpp \
  .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/touch/Touch_GSLx680.hpp \
  .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/touch/gslx680/Touch_GSLx680_FW.h \
- .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/touch/gslx680/../../../utility/pgmspace.h \
+ c:\codes\esp32\firmware\.pio\libdeps\esp32dev\lovyangfx\src\lgfx\utility\pgmspace.h \
  .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/touch/Touch_GT911.hpp \
  .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/touch/Touch_NS2009.hpp \
  .pio/libdeps/esp32dev/LovyanGFX/src/lgfx/v1/touch/Touch_STMPE610.hpp \

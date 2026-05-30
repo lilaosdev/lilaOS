@@ -47,6 +47,10 @@ Veja `docs/platformio.md` para o fluxo com PlatformIO.
 
 O display alvo atual e ST7789 240x240 via LovyanGFX. Veja `docs/st7789-display.md`.
 
+## Audio
+
+O audio alvo atual e MP3 via SPIFFS + I2S no MAX98357A. Veja `docs/audio-i2s-max98357a.md`.
+
 ## Ideias de hardware
 
 - ESP32 DevKit.

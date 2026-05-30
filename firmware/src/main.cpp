@@ -13,27 +13,36 @@ struct DialogStep {
   bool hasQuestion;
   const char* firstOption;
   const char* secondOption;
+  const char* audioPath;
 };
 
+// Audio: uma musica de fundo roda do inicio ao fim da narrativa.
+// O campo audioPath so precisa ser preenchido no primeiro dialogo.
+// Os demais ficam vazios — audio.update() no loop mantem a reproducao.
+// Quando chegar na pergunta, troca pra uma musica especifica se quiser.
+// Caminhos no SPIFFS: coloque os arquivos em data/ e use pio run -t uploadfs
 DialogStep dialog[] = {
   {
     "SISTEMA",
     "Inicializacao",
     false,
     "",
-    ""
+    "",
+    "/audio/lilpeep4.mp3"       // <-- musica de fundo, toca do inicio
   },
   {
     "EU",
     "Dialogooooooooooooooooooooooooo 1",
     false,
     "",
-    ""
+    "",
+    ""                    // vazio: audio continua do passo anterior
   },
   {
     "EU",
     "Dialogooooooooooooooooooooooooo 2",
     false,
+    "",
     "",
     ""
   },
@@ -42,7 +51,8 @@ DialogStep dialog[] = {
     "Quer namorar comigo?",
     true,
     "Sim",
-    "Nao"
+    "Nao",
+    ""
   },
 };
 
@@ -54,6 +64,7 @@ uint8_t selectedOption = 0;
 uint16_t visibleChars = 0;
 uint32_t lastTypewriterTick = 0;
 bool finalScreen = false;
+bool firstFrame = true;
 
 AppConfig loadRemoteConfig() {
   AppConfig config;
@@ -68,7 +79,6 @@ uint16_t textLength(const char* text) {
   while (text[length] != '\0') {
     length++;
   }
-
   return length;
 }
 
@@ -97,8 +107,10 @@ void renderDialog() {
     step.firstOption,
     step.secondOption,
     selectedOption,
-    isTextComplete()
+    isTextComplete(),
+    firstFrame
   );
+  firstFrame = false;
 }
 
 void enterDialog(uint8_t index) {
@@ -106,11 +118,20 @@ void enterDialog(uint8_t index) {
   selectedOption = 0;
   visibleChars = 0;
   lastTypewriterTick = millis();
+  firstFrame = true;
+
+  // So troca o audio se o passo tiver um caminho definido.
+  // Caso contrario, deixa o audio atual continuar tocando.
+  if (currentDialog().audioPath[0] != '\0') {
+    audio.play(currentDialog().audioPath);
+  }
+
   renderDialog();
 }
 
 void showFinalAnswer(const char* title, const char* body) {
   finalScreen = true;
+  audio.stop();
   display.showEnding(0, 1, title, body);
 }
 
@@ -131,7 +152,6 @@ void handleConfirm() {
     } else {
       showFinalAnswer("RESPOSTA", "Final NAO selecionado. Bloqueio reversivel entra depois.");
     }
-
     return;
   }
 
@@ -161,7 +181,8 @@ void updateTypewriter() {
   visibleChars++;
   renderDialog();
 }
-}
+
+} // namespace
 
 void setup() {
   Serial.begin(115200);
@@ -182,6 +203,8 @@ void setup() {
 }
 
 void loop() {
+  audio.update(); // precisa rodar com alta frequencia para alimentar o decoder MP3
+
   SceneAction action = buttons.readAction();
 
   if (action == SceneAction::Confirm) {
@@ -191,5 +214,6 @@ void loop() {
   }
 
   updateTypewriter();
-  delay(20);
+  audio.update();
+  delay(5);
 }
