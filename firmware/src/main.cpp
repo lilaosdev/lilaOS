@@ -28,7 +28,7 @@ DialogStep dialog[] = {
     false,
     "",
     "",
-    "/audio/lilpeep4.mp3"       // <-- musica de fundo, toca do inicio
+    "/audio/minhanamorada20s.mp3"       // <-- musica de fundo, toca do inicio
   },
   {
     "EU",
