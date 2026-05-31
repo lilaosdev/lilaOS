@@ -26,6 +26,8 @@ public:
     const char* body
   );
   void showLocked(const String& message);
+  void drawImageArea(const char* imagePath);
+  void drawGifLine(int16_t x, int16_t y, int16_t width, const uint16_t* pixels);
 };
 
 class AudioDevice {

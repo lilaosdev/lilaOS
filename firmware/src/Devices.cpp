@@ -39,6 +39,11 @@ constexpr int32_t OPT1_X      = 18;
 constexpr int32_t OPT2_X      = 126;
 constexpr int32_t OPT_W       = 96;
 
+constexpr int32_t IMAGE_AREA_Y = 156;
+constexpr int32_t IMAGE_AREA_H = 84;
+constexpr int32_t IMAGE_SIZE   = 84;
+constexpr int32_t IMAGE_X      = (DISPLAY_WIDTH - IMAGE_SIZE) / 2;
+
 class LGFX_ST7789 : public lgfx::LGFX_Device {
   lgfx::Panel_ST7789 panel;
   lgfx::Bus_SPI      bus;
@@ -220,6 +225,10 @@ void redrawOptions(
   lcd.print(secondOption);
 }
 
+void clearImageArea() {
+  lcd.fillRect(0, IMAGE_AREA_Y, DISPLAY_WIDTH, IMAGE_AREA_H, COLOR_BG);
+}
+
 void drawSerialDialogPreview(
   const char* speaker,
   const char* text,
@@ -395,6 +404,52 @@ void DisplayDevice::showLocked(const String& message) {
   lcd.setTextSize(2);
   lcd.setCursor(28, 104);
   lcd.print("BLOQUEADO");
+}
+
+void DisplayDevice::drawImageArea(const char* imagePath) {
+  clearImageArea();
+
+  if (imagePath == nullptr || imagePath[0] == '\0') {
+    return;
+  }
+
+  if (!SPIFFS.exists(imagePath)) {
+    Serial.print("[display] image not found: ");
+    Serial.println(imagePath);
+    return;
+  }
+
+  Serial.print("[display] draw BMP ");
+  Serial.println(imagePath);
+  lcd.drawBmpFile(SPIFFS, imagePath, IMAGE_X, IMAGE_AREA_Y);
+}
+
+void DisplayDevice::drawGifLine(int16_t x, int16_t y, int16_t width, const uint16_t* pixels) {
+  if (pixels == nullptr || width <= 0) {
+    return;
+  }
+
+  if (y < IMAGE_AREA_Y || y >= IMAGE_AREA_Y + IMAGE_AREA_H) {
+    return;
+  }
+
+  if (x < IMAGE_X) {
+    int16_t clipped = IMAGE_X - x;
+    pixels += clipped;
+    width -= clipped;
+    x = IMAGE_X;
+  }
+
+  int16_t maxRight = IMAGE_X + IMAGE_SIZE;
+  if (x + width > maxRight) {
+    width = maxRight - x;
+  }
+
+  if (width <= 0) {
+    return;
+  }
+
+  lcd.pushImage(x, y, width, 1, pixels);
 }
 
 // --- AudioDevice -------------------------------------------------------------
