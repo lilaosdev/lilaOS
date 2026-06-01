@@ -147,6 +147,7 @@ void redrawTextArea(
   lcd.setTextSize(2);
   lcd.setTextColor(COLOR_BLACK, COLOR_BG);
 
+  const int32_t lineRight = TEXT_X + TEXT_W;
   int32_t  cx      = TEXT_X;
   int32_t  cy      = TEXT_Y;
   uint16_t printed = 0;
@@ -161,7 +162,31 @@ void redrawTextArea(
       continue;
     }
 
-    if (cx + CHAR_W > TEXT_X + TEXT_W) {
+    if (c == ' ') {
+      printed++;
+      if (cx != TEXT_X && cx + CHAR_W <= lineRight) {
+        cx += CHAR_W;
+      }
+      continue;
+    }
+
+    const bool beginsWord = (i == 0 || text[i - 1] == ' ' || text[i - 1] == '\n' || text[i - 1] == '|');
+    if (beginsWord && cx != TEXT_X) {
+      uint16_t wordChars = 0;
+      for (uint16_t j = i; text[j] != '\0'; j++) {
+        if (text[j] == ' ' || text[j] == '\n' || text[j] == '|') {
+          break;
+        }
+        wordChars++;
+      }
+
+      if (cx + (wordChars * CHAR_W) > lineRight) {
+        cx = TEXT_X;
+        cy += LINE_H;
+      }
+    }
+
+    if (cx + CHAR_W > lineRight) {
       cx = TEXT_X;
       cy += LINE_H;
     }
@@ -186,7 +211,6 @@ void redrawTextArea(
     lcd.print("v");
   }
 }
-
 // Redesenha so a area das opcoes de escolha.
 // Chamado no firstFrame e quando selectedOption muda (navegar entre opcoes).
 void redrawOptions(

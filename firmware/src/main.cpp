@@ -162,17 +162,47 @@ DialogStep dialog[] = {
   },
   {
     "EU",
-    "Dialogooooooooooooooooooooooooo 1",
+    "desenvolvi esse projeto pensando em uma maneira de presentear uma pessoa tao especial",
     false,
     "",
     "",
     "",
-    "/img/rezegif2.gif",
-    true
+    "/img/gato4bmp.bmp",
+    false
   },
   {
     "EU",
-    "Dialogooooooooooooooooooooooooo 2",
+    "desde muito tempo venho pensando em uma maneira de enviar essa mensagem de uma maneira legal",
+    false,
+    "",
+    "",
+    "",
+    "/img/cena2.bmp",
+    false
+  },
+  {
+    "EU",
+    "e essa foi a forma que encontrei.",
+    false,
+    "",
+    "",
+    "",
+    "/img/cena2.bmp",
+    false
+  },
+    {
+    "EU",
+    "toda a ideia, estetica, eletronica e codigo dele foram montadas do zero por mim",
+    false,
+    "",
+    "",
+    "",
+    "/img/cena2.bmp",
+    false
+  },
+    {
+    "EU",
+    "foi bem dificil mas nada se comparou a dificuldade de encontrar as palavras que queria colocar aqui",
     false,
     "",
     "",
