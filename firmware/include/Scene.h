@@ -6,6 +6,7 @@ enum class SceneAction {
   None,
   Navigate,
   Confirm,
+  OpenHome,
   LockDevice,
   Finish,
 };

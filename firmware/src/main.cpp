@@ -156,7 +156,7 @@ DialogStep dialog[] = {
     false,
     "",
     "",
-    "/audio/minhanamorada20s.mp3",
+    "",
     "/img/gato3bmp.bmp",
     false
   },
@@ -172,32 +172,32 @@ DialogStep dialog[] = {
   },
   {
     "EU",
-    "desde muito tempo venho pensando em uma maneira de enviar essa mensagem de uma maneira legal",
+    "desde muito tempo venho pensando em como de enviar essa mensagem de uma maneira legal",
     false,
     "",
     "",
     "",
-    "/img/cena2.bmp",
+    "/img/gato5bmp.bmp",
     false
   },
   {
     "EU",
-    "e essa foi a forma que encontrei.",
+    "e essa foi a forma que encontrei. espero que goste :)",
     false,
     "",
     "",
     "",
-    "/img/cena2.bmp",
+    "/img/gato4bmp.bmp",
     false
   },
     {
     "EU",
-    "toda a ideia, estetica, eletronica e codigo dele foram montadas do zero por mim",
+    "toda a ideia, estetica, eletronica e codigo dele foram montadas por mim",
     false,
     "",
     "",
     "",
-    "/img/cena2.bmp",
+    "/img/gato1bmptrue.bmp",
     false
   },
     {
@@ -207,7 +207,7 @@ DialogStep dialog[] = {
     "",
     "",
     "",
-    "/img/cena2.bmp",
+    "/img/gato1bmptrue.bmp",
     false
   },
   {
@@ -217,7 +217,7 @@ DialogStep dialog[] = {
     "Sim",
     "Nao",
     "",
-    "/img/cena3.gif",
+    "/img/rezegif3.gif",
     true
   },
 };
@@ -403,6 +403,7 @@ void updateTypewriter() {
 } // namespace
 
 void setup() {
+
   Serial.begin(115200);
   delay(200);
 
@@ -419,6 +420,7 @@ void setup() {
   }
 
   enterDialog(0);
+  
 }
 
 void loop() {

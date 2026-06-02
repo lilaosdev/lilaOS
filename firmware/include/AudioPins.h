@@ -6,4 +6,4 @@
 #define AUDIO_PIN_BCLK 27
 
 // Keep conservative at first; MAX98357A can get loud quickly.
-#define AUDIO_DEFAULT_GAIN 0.8f
+#define AUDIO_DEFAULT_GAIN 0.3f

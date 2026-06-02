@@ -2,8 +2,8 @@
 #include "AudioPins.h"
 #include "DisplayPins.h"
 #include "InputPins.h"
-#include <SPIFFS.h>
-#include <AudioFileSourceSPIFFS.h>
+#include "StorageDevice.h"
+#include <AudioFileSourceFS.h>
 #include <AudioGeneratorMP3.h>
 #include <AudioOutputI2S.h>
 #include <LovyanGFX.hpp>
@@ -83,7 +83,7 @@ public:
       cfg.invert           = true;
       cfg.rgb_order        = false;
       cfg.dlen_16bit       = false;
-      cfg.bus_shared       = false;
+      cfg.bus_shared       = true;
       panel.config(cfg);
     }
     {
@@ -101,7 +101,7 @@ public:
 
 LGFX_ST7789 lcd;
 AudioGeneratorMP3* mp3 = nullptr;
-AudioFileSourceSPIFFS* audioFile = nullptr;
+AudioFileSourceFS* audioFile = nullptr;
 AudioOutputI2S* audioOutput = nullptr;
 uint32_t lastAudioStatusLog = 0;
 
@@ -251,6 +251,71 @@ void redrawOptions(
 
 void clearImageArea() {
   lcd.fillRect(0, IMAGE_AREA_Y, DISPLAY_WIDTH, IMAGE_AREA_H, COLOR_BG);
+}
+
+void drawTinyText(const char* text, int32_t x, int32_t y, uint16_t color = COLOR_BLACK) {
+  lcd.setTextFont(1);
+  lcd.setTextSize(1);
+  lcd.setTextColor(color, COLOR_BG);
+  lcd.setCursor(x, y);
+  lcd.print(text);
+}
+
+void drawMusicIcon(int32_t x, int32_t y, bool selected) {
+  uint16_t color = selected ? COLOR_BG : COLOR_BLACK;
+  uint16_t bg = selected ? COLOR_BLACK : COLOR_BG;
+  lcd.fillRect(x, y, 25, 25, bg);
+  lcd.fillRect(x + 15, y + 4, 3, 13, color);
+  lcd.fillRect(x + 8, y + 5, 10, 3, color);
+  lcd.fillRect(x + 8, y + 8, 3, 9, color);
+  lcd.fillRect(x + 4, y + 16, 8, 6, color);
+  lcd.fillRect(x + 13, y + 16, 8, 6, color);
+}
+
+void drawBlackjackIcon(int32_t x, int32_t y, bool selected) {
+  uint16_t color = selected ? COLOR_BG : COLOR_BLACK;
+  uint16_t bg = selected ? COLOR_BLACK : COLOR_BG;
+  lcd.fillRect(x, y, 25, 25, bg);
+  lcd.drawRect(x + 3, y + 5, 10, 15, color);
+  lcd.drawRect(x + 11, y + 3, 10, 15, color);
+  lcd.fillRect(x + 6, y + 10, 4, 4, color);
+  lcd.fillRect(x + 15, y + 8, 3, 3, color);
+  lcd.fillRect(x + 17, y + 11, 3, 3, color);
+}
+
+void drawSettingsIcon(int32_t x, int32_t y, bool selected) {
+  uint16_t color = selected ? COLOR_BG : COLOR_BLACK;
+  uint16_t bg = selected ? COLOR_BLACK : COLOR_BG;
+  lcd.fillRect(x, y, 25, 25, bg);
+  lcd.fillRect(x + 11, y + 3, 3, 19, color);
+  lcd.fillRect(x + 3, y + 11, 19, 3, color);
+  lcd.fillRect(x + 6, y + 6, 13, 13, color);
+  lcd.fillRect(x + 9, y + 9, 7, 7, bg);
+  lcd.fillRect(x + 11, y + 11, 3, 3, color);
+}
+
+void drawHomeApp(uint8_t index, const char* label, int32_t x, int32_t y, uint8_t selectedIndex) {
+  bool selected = index == selectedIndex;
+  if (selected) {
+    lcd.fillRect(x - 7, y - 7, 47, 62, COLOR_BLACK);
+    lcd.fillRect(x - 4, y - 4, 41, 56, COLOR_BG);
+    lcd.drawRect(x - 7, y - 7, 47, 62, COLOR_BLACK);
+  } else {
+    lcd.fillRect(x - 7, y - 7, 47, 62, COLOR_BG);
+  }
+
+  if (index == 0) {
+    drawMusicIcon(x + 4, y, selected);
+  } else if (index == 1) {
+    drawBlackjackIcon(x + 4, y, selected);
+  } else {
+    drawSettingsIcon(x + 4, y, selected);
+  }
+
+  int32_t labelX = x - 2;
+  if (index == 1) labelX = x - 7;
+  if (index == 2) labelX = x - 5;
+  drawTinyText(label, labelX, y + 36, COLOR_BLACK);
 }
 
 void drawSerialDialogPreview(
@@ -430,6 +495,56 @@ void DisplayDevice::showLocked(const String& message) {
   lcd.print("BLOQUEADO");
 }
 
+void DisplayDevice::showHome(uint8_t selectedIndex) {
+  lcd.fillScreen(COLOR_BG);
+  drawScreenBorder();
+
+  lcd.setTextFont(1);
+  lcd.setTextSize(2);
+  lcd.setTextColor(COLOR_BLACK, COLOR_BG);
+  lcd.setCursor(42, 22);
+  lcd.print("PEDIDO.OS");
+
+  lcd.setTextSize(1);
+  lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
+  lcd.setCursor(58, 48);
+  lcd.print("selecione um app");
+
+  drawHomeApp(0, "MUSICA", 28, 88, selectedIndex);
+  drawHomeApp(1, "BLACK", 98, 88, selectedIndex);
+  drawHomeApp(2, "SET", 168, 88, selectedIndex);
+
+  lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
+  lcd.setCursor(28, 214);
+  lcd.print("N navegar   C abrir");
+
+  Serial.print("[home] selected ");
+  Serial.println(selectedIndex);
+}
+
+void DisplayDevice::showAppPlaceholder(const char* title, const char* subtitle) {
+  lcd.fillScreen(COLOR_BG);
+  drawScreenBorder();
+
+  lcd.setTextFont(1);
+  lcd.setTextSize(2);
+  lcd.setTextColor(COLOR_BLACK, COLOR_BG);
+  lcd.setCursor(24, 54);
+  lcd.print(title);
+
+  lcd.setTextSize(1);
+  lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
+  lcd.setCursor(24, 92);
+  lcd.print(subtitle);
+
+  lcd.setTextColor(COLOR_BLACK, COLOR_BG);
+  lcd.setCursor(24, 206);
+  lcd.print("C voltar para home");
+
+  Serial.print("[app] ");
+  Serial.println(title);
+}
+
 void DisplayDevice::drawImageArea(const char* imagePath) {
   clearImageArea();
 
@@ -437,15 +552,18 @@ void DisplayDevice::drawImageArea(const char* imagePath) {
     return;
   }
 
-  if (!SPIFFS.exists(imagePath)) {
+  fs::FS* fs = storage.fileSystemFor(imagePath);
+  if (fs == nullptr) {
     Serial.print("[display] image not found: ");
     Serial.println(imagePath);
     return;
   }
 
   Serial.print("[display] draw BMP ");
-  Serial.println(imagePath);
-  lcd.drawBmpFile(SPIFFS, imagePath, IMAGE_X, IMAGE_AREA_Y);
+  Serial.print(imagePath);
+  Serial.print(" from ");
+  Serial.println(storage.sourceNameFor(imagePath));
+  lcd.drawBmpFile(*fs, imagePath, IMAGE_X, IMAGE_AREA_Y);
 }
 
 void DisplayDevice::drawGifLine(int16_t x, int16_t y, int16_t width, const uint16_t* pixels) {
@@ -479,10 +597,7 @@ void DisplayDevice::drawGifLine(int16_t x, int16_t y, int16_t width, const uint1
 // --- AudioDevice -------------------------------------------------------------
 
 void AudioDevice::begin() {
-  if (!SPIFFS.begin(true)) {
-    Serial.println("[audio] SPIFFS mount failed");
-    return;
-  }
+  storage.begin();
 
   audioOutput = new AudioOutputI2S();
   audioOutput->SetPinout(AUDIO_PIN_BCLK, AUDIO_PIN_LRC, AUDIO_PIN_DIN);
@@ -497,18 +612,6 @@ void AudioDevice::begin() {
   Serial.print(AUDIO_PIN_LRC);
   Serial.print(" DIN=");
   Serial.println(AUDIO_PIN_DIN);
-
-  Serial.println("[audio] SPIFFS files:");
-  File root = SPIFFS.open("/");
-  File file = root.openNextFile();
-  while (file) {
-    Serial.print("[audio]   ");
-    Serial.print(file.name());
-    Serial.print(" (");
-    Serial.print(file.size());
-    Serial.println(" bytes)");
-    file = root.openNextFile();
-  }
 }
 
 void AudioDevice::play(const char* audioPath) {
@@ -521,8 +624,9 @@ void AudioDevice::play(const char* audioPath) {
 
   stop();
 
-  if (!SPIFFS.exists(audioPath)) {
-    Serial.print("[audio] file not found in SPIFFS: ");
+  fs::FS* fs = storage.fileSystemFor(audioPath);
+  if (fs == nullptr) {
+    Serial.print("[audio] file not found: ");
     Serial.println(audioPath);
     return;
   }
@@ -532,7 +636,10 @@ void AudioDevice::play(const char* audioPath) {
     return;
   }
 
-  audioFile = new AudioFileSourceSPIFFS(audioPath);
+  Serial.print("[audio] source ");
+  Serial.println(storage.sourceNameFor(audioPath));
+
+  audioFile = new AudioFileSourceFS(*fs, audioPath);
 
   if (!mp3->begin(audioFile, audioOutput)) {
     Serial.println("[audio] MP3 decoder failed to start");
@@ -595,6 +702,7 @@ SceneAction ButtonInput::readAction() {
     char input = Serial.read();
     if (input == 'c') return SceneAction::Confirm;
     if (input == 'n') return SceneAction::Navigate;
+    if (input == 'i') return SceneAction::OpenHome;
   }
 
   if (isPressed(CONFIRM_BUTTON_PIN)) {

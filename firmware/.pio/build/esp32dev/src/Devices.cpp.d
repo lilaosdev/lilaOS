@@ -134,14 +134,12 @@
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  include/Scene.h include/AudioPins.h include/DisplayPins.h \
- include/InputPins.h \
- C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/libraries/SPIFFS/src/SPIFFS.h \
+ include/InputPins.h include/StorageDevice.h \
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h \
- .pio/libdeps/esp32dev/ESP8266Audio/src/AudioFileSourceSPIFFS.h \
+ .pio/libdeps/esp32dev/ESP8266Audio/src/AudioFileSourceFS.h \
  .pio/libdeps/esp32dev/ESP8266Audio/src/AudioFileSource.h \
  .pio/libdeps/esp32dev/ESP8266Audio/src/AudioStatus.h \
  .pio/libdeps/esp32dev/ESP8266Audio/src/AudioLogger.h \
- .pio/libdeps/esp32dev/ESP8266Audio/src/AudioFileSourceFS.h \
  .pio/libdeps/esp32dev/ESP8266Audio/src/AudioGeneratorMP3.h \
  .pio/libdeps/esp32dev/ESP8266Audio/src/AudioGenerator.h \
  .pio/libdeps/esp32dev/ESP8266Audio/src/AudioOutput.h \
