@@ -6,7 +6,7 @@
 #include <SPIFFS.h>
 
 namespace {
-SPIClass sdSpi(VSPI);
+SPIClass sdSpi(HSPI);
 
 void printDirectory(fs::FS& fs, const char* label, const char* dirname, uint8_t depth) {
   File root = fs.open(dirname);
@@ -48,6 +48,21 @@ void StorageDevice::begin() {
   } else {
     Serial.println("[storage] SPIFFS mount failed");
   }
+
+  pinMode(SD_PIN_CS, OUTPUT);
+  digitalWrite(SD_PIN_CS, HIGH);
+  delay(20);
+
+  Serial.print("[storage] SD init HSPI: CS=");
+  Serial.print(SD_PIN_CS);
+  Serial.print(" SCLK=");
+  Serial.print(SD_PIN_SCLK);
+  Serial.print(" MISO=");
+  Serial.print(SD_PIN_MISO);
+  Serial.print(" MOSI=");
+  Serial.print(SD_PIN_MOSI);
+  Serial.print(" FREQ=");
+  Serial.println(SD_SPI_FREQUENCY);
 
   sdSpi.begin(SD_PIN_SCLK, SD_PIN_MISO, SD_PIN_MOSI, SD_PIN_CS);
   sdReady = SD.begin(SD_PIN_CS, sdSpi, SD_SPI_FREQUENCY);

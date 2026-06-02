@@ -19,6 +19,11 @@ public:
     bool textComplete,
     bool firstFrame = false
   );
+  // Desenha apenas o proximo caractere — sem fullredraw, sem fillRect na area de texto.
+  // Chame no lugar de showDialog durante o typewriter normal.
+  void drawNextChar(const char* text, uint16_t visibleChars, bool textComplete);
+  // Redesenha so as opcoes de escolha — sem tocar texto nem gif.
+  void redrawOptions(const char* firstOption, const char* secondOption, uint8_t selectedOption);
   void showEnding(
     uint8_t pageIndex,
     uint8_t pageCount,
@@ -26,8 +31,6 @@ public:
     const char* body
   );
   void showLocked(const String& message);
-  void showHome(uint8_t selectedIndex);
-  void showAppPlaceholder(const char* title, const char* subtitle);
   void drawImageArea(const char* imagePath);
   void drawGifLine(int16_t x, int16_t y, int16_t width, const uint16_t* pixels);
 };

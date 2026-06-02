@@ -21,26 +21,21 @@ void* gifOpenFile(const char* filename, int32_t* size) {
     *size = 0;
     return nullptr;
   }
-
   *size = gifFile.size();
   return &gifFile;
 }
 
 void gifCloseFile(void* handle) {
   File* file = static_cast<File*>(handle);
-  if (file != nullptr) {
-    file->close();
-  }
+  if (file != nullptr) file->close();
 }
 
 int32_t gifReadFile(GIFFILE* file, uint8_t* buffer, int32_t length) {
   File* handle = static_cast<File*>(file->fHandle);
   if (handle == nullptr) return 0;
-
   int32_t remaining = file->iSize - file->iPos;
   if (length > remaining) length = remaining;
   if (length <= 0) return 0;
-
   int32_t bytesRead = handle->read(buffer, length);
   file->iPos = handle->position();
   return bytesRead;
@@ -49,7 +44,6 @@ int32_t gifReadFile(GIFFILE* file, uint8_t* buffer, int32_t length) {
 int32_t gifSeekFile(GIFFILE* file, int32_t position) {
   File* handle = static_cast<File*>(file->fHandle);
   if (handle == nullptr) return 0;
-
   handle->seek(position);
   file->iPos = handle->position();
   return file->iPos;
@@ -57,10 +51,8 @@ int32_t gifSeekFile(GIFFILE* file, int32_t position) {
 
 void gifDraw(GIFDRAW* draw) {
   if (draw == nullptr) return;
-
   uint16_t* palette = draw->pPalette;
   if (palette == nullptr) return;
-
   uint8_t* source = draw->pPixels;
   if (source == nullptr) return;
 
@@ -69,32 +61,19 @@ void gifDraw(GIFDRAW* draw) {
   constexpr int16_t imageX  = 78;
   constexpr int16_t imageY  = 156;
 
-  // iX e iWidth vem do frame — podem extrapolar o canvas se o GIF
-  // tiver subframes posicionados. Clampamos tudo antes de qualquer acesso.
   int16_t srcOffset = 0;
   int16_t frameX    = (int16_t)draw->iX;
   int16_t frameW    = (int16_t)draw->iWidth;
   int16_t frameY    = (int16_t)draw->iY + (int16_t)draw->y;
 
-  // corta pela esquerda
   if (frameX < 0) {
     srcOffset = -frameX;
     frameW   -= srcOffset;
     frameX    = 0;
   }
-
-  // corta pela direita
-  if (frameX + frameW > IMAGE_W) {
-    frameW = IMAGE_W - frameX;
-  }
-
-  // descarta frame fora da area vertical
+  if (frameX + frameW > IMAGE_W) frameW = IMAGE_W - frameX;
   if (frameY < 0 || frameY >= IMAGE_H) return;
-
-  // nada a desenhar
   if (frameW <= 0) return;
-
-  // garante que nao vai estourar o buffer de linha
   if (frameW > IMAGE_W) frameW = IMAGE_W;
 
   int16_t outputX = imageX + frameX;
@@ -105,10 +84,8 @@ void gifDraw(GIFDRAW* draw) {
   if (draw->ucHasTransparency) {
     int16_t runStart  = -1;
     int16_t runLength = 0;
-
     for (int16_t x = 0; x < frameW; x++) {
       uint8_t index = source[srcOffset + x];
-
       if (index == draw->ucTransparent) {
         if (runLength > 0) {
           display.drawGifLine(outputX + runStart, outputY, runLength, &line[runStart]);
@@ -117,12 +94,10 @@ void gifDraw(GIFDRAW* draw) {
         }
         continue;
       }
-
       line[x] = palette[index];
       if (runStart < 0) runStart = x;
       runLength++;
     }
-
     if (runLength > 0) {
       display.drawGifLine(outputX + runStart, outputY, runLength, &line[runStart]);
     }
@@ -132,7 +107,6 @@ void gifDraw(GIFDRAW* draw) {
   for (int16_t x = 0; x < frameW; x++) {
     line[x] = palette[source[srcOffset + x]];
   }
-
   display.drawGifLine(outputX, outputY, frameW, line);
 }
 
@@ -153,77 +127,50 @@ DialogStep dialog[] = {
   {
     "SISTEMA",
     "Oi lila, tudo bem?",
-    false,
-    "",
-    "",
-    "",
-    "/img/gato3bmp.bmp",
-    false
+    false, "", "",
+    "/audio/minhanamorada20s.mp3",
+    "/img/gato3bmp.bmp", false
   },
   {
     "EU",
     "desenvolvi esse projeto pensando em uma maneira de presentear uma pessoa tao especial",
-    false,
-    "",
-    "",
-    "",
-    "/img/gato4bmp.bmp",
-    false
+    false, "", "", "",
+    "/img/gato4bmp.bmp", false
   },
   {
     "EU",
     "desde muito tempo venho pensando em como de enviar essa mensagem de uma maneira legal",
-    false,
-    "",
-    "",
-    "",
-    "/img/gato5bmp.bmp",
-    false
+    false, "", "", "",
+    "/img/gato5bmp.bmp", false
   },
   {
     "EU",
     "e essa foi a forma que encontrei. espero que goste :)",
-    false,
-    "",
-    "",
-    "",
-    "/img/gato4bmp.bmp",
-    false
+    false, "", "", "",
+    "/img/gato4bmp.bmp", false
   },
-    {
+  {
     "EU",
     "toda a ideia, estetica, eletronica e codigo dele foram montadas por mim",
-    false,
-    "",
-    "",
-    "",
-    "/img/gato1bmptrue.bmp",
-    false
+    false, "", "", "",
+    "/img/gato1bmptrue.bmp", false
   },
-    {
+  {
     "EU",
     "foi bem dificil mas nada se comparou a dificuldade de encontrar as palavras que queria colocar aqui",
-    false,
-    "",
-    "",
-    "",
-    "/img/gato1bmptrue.bmp",
-    false
+    false, "", "", "",
+    "/img/gato1bmptrue.bmp", false
   },
   {
     "PERGUNTA",
     "Quer namorar comigo?",
-    true,
-    "Sim",
-    "Nao",
-    "",
-    "/img/rezegif3.gif",
-    true
+    true, "Sim", "Nao", "",
+    "/img/rezegif3.gif", true
   },
 };
 
-constexpr uint8_t DIALOG_COUNT = sizeof(dialog) / sizeof(dialog[0]);
-constexpr uint16_t TYPEWRITER_INTERVAL_MS = 45;
+constexpr uint8_t  DIALOG_COUNT          = sizeof(dialog) / sizeof(dialog[0]);
+constexpr uint16_t TYPEWRITER_INTERVAL_MS = 100;
 
 uint8_t  currentDialogIndex = 0;
 uint8_t  selectedOption     = 0;
@@ -259,57 +206,45 @@ void stopGif() {
     gif.close();
     gifActive = false;
   }
-  if (gifFile) {
-    gifFile.close();
-  }
+  if (gifFile) gifFile.close();
 }
 
 void startGif(const char* imagePath) {
   stopGif();
   display.drawImageArea(nullptr);
-
   if (imagePath == nullptr || imagePath[0] == '\0') return;
-
   if (!SPIFFS.exists(imagePath)) {
     Serial.print("[gif] file not found: ");
     Serial.println(imagePath);
     return;
   }
-
   if (!gif.open(imagePath, gifOpenFile, gifCloseFile, gifReadFile, gifSeekFile, gifDraw)) {
     Serial.print("[gif] decoder failed: ");
     Serial.println(imagePath);
     return;
   }
-
-  gifActive       = true;
-  lastGifFrameAt  = millis();
+  gifActive      = true;
+  lastGifFrameAt = millis();
   Serial.print("[gif] started ");
   Serial.println(imagePath);
 }
 
 void updateGif() {
   if (!gifActive) return;
-
-  if (!gif.playFrame(false, nullptr)) {
-    gif.reset();
-  }
+  if (!gif.playFrame(false, nullptr)) gif.reset();
 }
 
 void drawDialogAsset() {
   DialogStep& step = currentDialog();
-
   if (step.imagePath == nullptr || step.imagePath[0] == '\0') {
     stopGif();
     display.drawImageArea(nullptr);
     return;
   }
-
   if (step.isGif) {
     startGif(step.imagePath);
     return;
   }
-
   stopGif();
   display.drawImageArea(step.imagePath);
 }
@@ -321,7 +256,8 @@ void lockDevice(const String& reason) {
   esp_deep_sleep_start();
 }
 
-void renderDialog() {
+// Redesenha a tela inteira — usado apenas no firstFrame ou ao acelerar o texto.
+void renderDialogFull() {
   DialogStep& step = currentDialog();
   display.showDialog(
     step.speaker,
@@ -337,18 +273,30 @@ void renderDialog() {
   firstFrame = false;
 }
 
+// Desenha apenas o proximo caractere — usado pelo typewriter normal.
+// Nao apaga nada, nao redesenha letras anteriores.
+void renderNextChar() {
+  DialogStep& step = currentDialog();
+  display.drawNextChar(
+    step.text,
+    visibleChars,
+    isTextComplete()
+  );
+}
+
 void enterDialog(uint8_t index) {
-  currentDialogIndex  = index;
-  selectedOption      = 0;
-  visibleChars        = 0;
-  lastTypewriterTick  = millis();
-  firstFrame          = true;
+  currentDialogIndex = index;
+  selectedOption     = 0;
+  visibleChars       = 0;
+  lastTypewriterTick = millis();
+  firstFrame         = true;
 
   if (currentDialog().audioPath[0] != '\0') {
     audio.play(currentDialog().audioPath);
   }
 
-  renderDialog();
+  // firstFrame=true: desenha tudo do zero, reseta estado do cursor no display
+  renderDialogFull();
   drawDialogAsset();
 }
 
@@ -363,8 +311,9 @@ void handleConfirm() {
   if (finalScreen) return;
 
   if (!isTextComplete()) {
+    // acelerar: revela tudo de uma vez com fullredraw
     visibleChars = textLength(currentDialog().text);
-    renderDialog();
+    renderDialogFull();
     return;
   }
 
@@ -385,7 +334,12 @@ void handleConfirm() {
 void handleNavigate() {
   if (!finalScreen && currentDialog().hasQuestion && isTextComplete()) {
     selectedOption = selectedOption == 0 ? 1 : 0;
-    renderDialog();
+    // so redesenha as opcoes, nao o texto
+    display.redrawOptions(
+      currentDialog().firstOption,
+      currentDialog().secondOption,
+      selectedOption
+    );
   }
 }
 
@@ -397,13 +351,14 @@ void updateTypewriter() {
 
   lastTypewriterTick = now;
   visibleChars++;
-  renderDialog();
+
+  // desenha so o char novo — sem fillRect, sem redesenho completo
+  renderNextChar();
 }
 
 } // namespace
 
 void setup() {
-
   Serial.begin(115200);
   delay(200);
 
@@ -420,7 +375,6 @@ void setup() {
   }
 
   enterDialog(0);
-  
 }
 
 void loop() {

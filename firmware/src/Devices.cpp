@@ -12,43 +12,39 @@ namespace {
 constexpr uint8_t NAVIGATE_BUTTON_PIN = INPUT_PIN_NAVIGATE;
 constexpr uint8_t CONFIRM_BUTTON_PIN  = INPUT_PIN_CONFIRM;
 
-// Paleta: rosa clarissimo, preto, rosa medio, rosa escuro
-constexpr uint16_t COLOR_BG        = 0xFEF7; // #FFF0F3 rosa clarissimo quase branco
-constexpr uint16_t COLOR_BLACK     = 0x0000; // preto puro - texto e opcoes
-constexpr uint16_t COLOR_PINK      = 0xF8B2; // #F4A7B9 rosa medio - borda interna
-constexpr uint16_t COLOR_PINK_DARK = 0xF389; // #E8728C rosa escuro - borda externa e cantos
+constexpr uint16_t COLOR_BG        = 0xFEF7;
+constexpr uint16_t COLOR_BLACK     = 0x0000;
+constexpr uint16_t COLOR_PINK      = 0xF8B2;
+constexpr uint16_t COLOR_PINK_DARK = 0xF389;
 constexpr uint16_t COLOR_RED       = 0xF800;
 
-// Layout da tela (240x240)
-// y=0..7   : margem superior
-// y=8..155 : area de texto do dialogo
-// y=156..239: area livre para gif/asset (sem separador, sem caixa)
-constexpr int32_t TEXT_X      = 18;
-constexpr int32_t TEXT_Y      = 20;
-constexpr int32_t TEXT_W      = 204; // 18..222
-constexpr int32_t TEXT_H      = 136; // ate y=156
-constexpr int32_t LINE_H      = 20;  // font1 size2 = ~16px altura + 4px espaco
+constexpr int32_t TEXT_X = 18;
+constexpr int32_t TEXT_Y = 20;
+constexpr int32_t TEXT_W = 204;
+constexpr int32_t TEXT_H = 136;
+constexpr int32_t LINE_H = 20;
+constexpr int32_t CHAR_W = 12;
 
-// font 1 size 2: cada char 12px largura, 16px altura (estavel e legivel)
-constexpr int32_t CHAR_W      = 12;
-
-// Area das opcoes de escolha
-constexpr int32_t OPT_Y       = 148;
-constexpr int32_t OPT_H       = 22;
-constexpr int32_t OPT1_X      = 18;
-constexpr int32_t OPT2_X      = 126;
-constexpr int32_t OPT_W       = 96;
+constexpr int32_t OPT_Y  = 148;
+constexpr int32_t OPT_H  = 22;
+constexpr int32_t OPT1_X = 18;
+constexpr int32_t OPT2_X = 126;
+constexpr int32_t OPT_W  = 96;
 
 constexpr int32_t IMAGE_AREA_Y = 156;
 constexpr int32_t IMAGE_AREA_H = 84;
 constexpr int32_t IMAGE_SIZE   = 84;
 constexpr int32_t IMAGE_X      = (DISPLAY_WIDTH - IMAGE_SIZE) / 2;
 
+// Estado do cursor — persistente entre chamadas de drawNextChar.
+// Resetado quando showDialog e chamado com firstFrame=true.
+int32_t cursorCx = TEXT_X;
+int32_t cursorCy = TEXT_Y;
+
 class LGFX_ST7789 : public lgfx::LGFX_Device {
   lgfx::Panel_ST7789 panel;
   lgfx::Bus_SPI      bus;
   lgfx::Light_PWM    light;
-
 public:
   LGFX_ST7789() {
     {
@@ -100,16 +96,14 @@ public:
 };
 
 LGFX_ST7789 lcd;
-AudioGeneratorMP3* mp3 = nullptr;
-AudioFileSourceFS* audioFile = nullptr;
-AudioOutputI2S* audioOutput = nullptr;
-uint32_t lastAudioStatusLog = 0;
+AudioGeneratorMP3*  mp3         = nullptr;
+AudioFileSourceFS*  audioFile   = nullptr;
+AudioOutputI2S*     audioOutput = nullptr;
+uint32_t lastAudioStatusLog     = 0;
 
 // -----------------------------------------------------------------------------
 
-bool isPressed(uint8_t pin) {
-  return digitalRead(pin) == LOW;
-}
+bool isPressed(uint8_t pin) { return digitalRead(pin) == LOW; }
 
 uint16_t textLength(const char* text) {
   uint16_t len = 0;
@@ -117,92 +111,92 @@ uint16_t textLength(const char* text) {
   return len;
 }
 
-// Borda dupla fina + cantos preenchidos. Nao apaga o interior.
 void drawScreenBorder() {
-  // borda externa
   lcd.drawRect(4, 4, 232, 232, COLOR_PINK_DARK);
-  // borda interna
   lcd.drawRect(7, 7, 226, 226, COLOR_PINK);
-  // cantos 8x8 preenchidos sobre as bordas
   lcd.fillRect(4,   4,   8, 8, COLOR_PINK_DARK);
   lcd.fillRect(228, 4,   8, 8, COLOR_PINK_DARK);
   lcd.fillRect(4,   228, 8, 8, COLOR_PINK_DARK);
   lcd.fillRect(228, 228, 8, 8, COLOR_PINK_DARK);
 }
 
-// Redesenha apenas a area de texto (TEXT_X, TEXT_Y, TEXT_W, TEXT_H).
-// Nao toca borda nem area do gif.
-// font 1, size 2: chars 12px largura, 16px altura. Estavel e sem bug de renderizacao.
-// '|' funciona como quebra de linha forcada (igual ao original).
+void clearImageArea() {
+  lcd.fillRect(0, IMAGE_AREA_Y, DISPLAY_WIDTH, IMAGE_AREA_H, COLOR_BG);
+}
+
+// Logica de avanco de cursor — identica em redrawTextArea e drawNextChar.
+// Retorna true se precisa quebrar linha antes de desenhar o char em 'i'.
+bool advanceCursor(const char* text, uint16_t i, int32_t& cx, int32_t& cy) {
+  const int32_t lineRight = TEXT_X + TEXT_W;
+  char c = text[i];
+
+  if (c == '\n' || c == '|') {
+    cx = TEXT_X;
+    cy += LINE_H;
+    return false; // nao desenha nada
+  }
+
+  if (c == ' ') {
+    if (cx != TEXT_X && cx + CHAR_W <= lineRight) cx += CHAR_W;
+    return false;
+  }
+
+  // word wrap
+  const bool beginsWord = (i == 0 || text[i-1]==' ' || text[i-1]=='\n' || text[i-1]=='|');
+  if (beginsWord && cx != TEXT_X) {
+    uint16_t wordChars = 0;
+    for (uint16_t j = i; text[j] != '\0'; j++) {
+      if (text[j]==' ' || text[j]=='\n' || text[j]=='|') break;
+      wordChars++;
+    }
+    if (cx + (int32_t)(wordChars * CHAR_W) > lineRight) {
+      cx = TEXT_X;
+      cy += LINE_H;
+    }
+  }
+
+  if (cx + CHAR_W > lineRight) {
+    cx = TEXT_X;
+    cy += LINE_H;
+  }
+
+  return true; // char normal, deve ser desenhado
+}
+
+// Fullredraw da area de texto — usado no firstFrame e ao acelerar.
+// Tambem sincroniza cursorCx/cursorCy com a posicao final.
 void redrawTextArea(
   const char* text,
   uint16_t    visibleChars,
   bool        textComplete,
   bool        hasQuestion
 ) {
-  // limpa so a area de texto
   lcd.fillRect(TEXT_X, TEXT_Y, TEXT_W, TEXT_H, COLOR_BG);
-
   lcd.setTextFont(1);
   lcd.setTextSize(2);
   lcd.setTextColor(COLOR_BLACK, COLOR_BG);
 
-  const int32_t lineRight = TEXT_X + TEXT_W;
   int32_t  cx      = TEXT_X;
   int32_t  cy      = TEXT_Y;
   uint16_t printed = 0;
 
   for (uint16_t i = 0; text[i] != '\0' && printed < visibleChars; i++) {
-    char c = text[i];
-
-    if (c == '\n' || c == '|') {
-      cx = TEXT_X;
-      cy += LINE_H;
-      printed++;
-      continue;
-    }
-
-    if (c == ' ') {
-      printed++;
-      if (cx != TEXT_X && cx + CHAR_W <= lineRight) {
-        cx += CHAR_W;
-      }
-      continue;
-    }
-
-    const bool beginsWord = (i == 0 || text[i - 1] == ' ' || text[i - 1] == '\n' || text[i - 1] == '|');
-    if (beginsWord && cx != TEXT_X) {
-      uint16_t wordChars = 0;
-      for (uint16_t j = i; text[j] != '\0'; j++) {
-        if (text[j] == ' ' || text[j] == '\n' || text[j] == '|') {
-          break;
-        }
-        wordChars++;
-      }
-
-      if (cx + (wordChars * CHAR_W) > lineRight) {
-        cx = TEXT_X;
-        cy += LINE_H;
-      }
-    }
-
-    if (cx + CHAR_W > lineRight) {
-      cx = TEXT_X;
-      cy += LINE_H;
-    }
-
-    lcd.setCursor(cx, cy);
-    lcd.print(c);
-    cx += CHAR_W;
+    bool draw = advanceCursor(text, i, cx, cy);
     printed++;
+    if (!draw) continue;
+    lcd.setCursor(cx, cy);
+    lcd.print(text[i]);
+    cx += CHAR_W;
   }
 
-  // cursor rosa piscante: so aparece enquanto texto nao completou
+  // sincroniza estado do cursor
+  cursorCx = cx;
+  cursorCy = cy;
+
   if (!textComplete) {
-    lcd.fillRect(cx, cy + 2, 6, 12, COLOR_PINK_DARK);
+    lcd.fillRect(cursorCx, cursorCy + 2, 6, 12, COLOR_PINK_DARK);
   }
 
-  // indicador de continuar: triangulo/seta no canto inferior direito da area de texto
   if (textComplete && !hasQuestion) {
     lcd.setTextFont(1);
     lcd.setTextSize(1);
@@ -211,20 +205,16 @@ void redrawTextArea(
     lcd.print("v");
   }
 }
-// Redesenha so a area das opcoes de escolha.
-// Chamado no firstFrame e quando selectedOption muda (navegar entre opcoes).
+
 void redrawOptions(
   const char* firstOption,
   const char* secondOption,
   uint8_t     selectedOption
 ) {
-  // limpa area das opcoes
   lcd.fillRect(OPT1_X, OPT_Y, OPT_W + (OPT2_X - OPT1_X - OPT_W) + OPT_W, OPT_H, COLOR_BG);
-
   lcd.setTextFont(1);
   lcd.setTextSize(2);
 
-  // opcao 0
   if (selectedOption == 0) {
     lcd.fillRect(OPT1_X, OPT_Y, OPT_W, OPT_H, COLOR_BLACK);
     lcd.setTextColor(COLOR_BG, COLOR_BLACK);
@@ -236,7 +226,6 @@ void redrawOptions(
   lcd.setCursor(OPT1_X + 6, OPT_Y + 4);
   lcd.print(firstOption);
 
-  // opcao 1
   if (selectedOption == 1) {
     lcd.fillRect(OPT2_X, OPT_Y, OPT_W, OPT_H, COLOR_BLACK);
     lcd.setTextColor(COLOR_BG, COLOR_BLACK);
@@ -247,75 +236,6 @@ void redrawOptions(
   }
   lcd.setCursor(OPT2_X + 6, OPT_Y + 4);
   lcd.print(secondOption);
-}
-
-void clearImageArea() {
-  lcd.fillRect(0, IMAGE_AREA_Y, DISPLAY_WIDTH, IMAGE_AREA_H, COLOR_BG);
-}
-
-void drawTinyText(const char* text, int32_t x, int32_t y, uint16_t color = COLOR_BLACK) {
-  lcd.setTextFont(1);
-  lcd.setTextSize(1);
-  lcd.setTextColor(color, COLOR_BG);
-  lcd.setCursor(x, y);
-  lcd.print(text);
-}
-
-void drawMusicIcon(int32_t x, int32_t y, bool selected) {
-  uint16_t color = selected ? COLOR_BG : COLOR_BLACK;
-  uint16_t bg = selected ? COLOR_BLACK : COLOR_BG;
-  lcd.fillRect(x, y, 25, 25, bg);
-  lcd.fillRect(x + 15, y + 4, 3, 13, color);
-  lcd.fillRect(x + 8, y + 5, 10, 3, color);
-  lcd.fillRect(x + 8, y + 8, 3, 9, color);
-  lcd.fillRect(x + 4, y + 16, 8, 6, color);
-  lcd.fillRect(x + 13, y + 16, 8, 6, color);
-}
-
-void drawBlackjackIcon(int32_t x, int32_t y, bool selected) {
-  uint16_t color = selected ? COLOR_BG : COLOR_BLACK;
-  uint16_t bg = selected ? COLOR_BLACK : COLOR_BG;
-  lcd.fillRect(x, y, 25, 25, bg);
-  lcd.drawRect(x + 3, y + 5, 10, 15, color);
-  lcd.drawRect(x + 11, y + 3, 10, 15, color);
-  lcd.fillRect(x + 6, y + 10, 4, 4, color);
-  lcd.fillRect(x + 15, y + 8, 3, 3, color);
-  lcd.fillRect(x + 17, y + 11, 3, 3, color);
-}
-
-void drawSettingsIcon(int32_t x, int32_t y, bool selected) {
-  uint16_t color = selected ? COLOR_BG : COLOR_BLACK;
-  uint16_t bg = selected ? COLOR_BLACK : COLOR_BG;
-  lcd.fillRect(x, y, 25, 25, bg);
-  lcd.fillRect(x + 11, y + 3, 3, 19, color);
-  lcd.fillRect(x + 3, y + 11, 19, 3, color);
-  lcd.fillRect(x + 6, y + 6, 13, 13, color);
-  lcd.fillRect(x + 9, y + 9, 7, 7, bg);
-  lcd.fillRect(x + 11, y + 11, 3, 3, color);
-}
-
-void drawHomeApp(uint8_t index, const char* label, int32_t x, int32_t y, uint8_t selectedIndex) {
-  bool selected = index == selectedIndex;
-  if (selected) {
-    lcd.fillRect(x - 7, y - 7, 47, 62, COLOR_BLACK);
-    lcd.fillRect(x - 4, y - 4, 41, 56, COLOR_BG);
-    lcd.drawRect(x - 7, y - 7, 47, 62, COLOR_BLACK);
-  } else {
-    lcd.fillRect(x - 7, y - 7, 47, 62, COLOR_BG);
-  }
-
-  if (index == 0) {
-    drawMusicIcon(x + 4, y, selected);
-  } else if (index == 1) {
-    drawBlackjackIcon(x + 4, y, selected);
-  } else {
-    drawSettingsIcon(x + 4, y, selected);
-  }
-
-  int32_t labelX = x - 2;
-  if (index == 1) labelX = x - 7;
-  if (index == 2) labelX = x - 5;
-  drawTinyText(label, labelX, y + 36, COLOR_BLACK);
 }
 
 void drawSerialDialogPreview(
@@ -329,38 +249,23 @@ void drawSerialDialogPreview(
   bool        textComplete
 ) {
   const uint16_t total = textLength(text);
-
   Serial.println();
   Serial.println("+--------------------------------------+");
-  Serial.print("| ");
-  Serial.println(speaker);
+  Serial.print("| "); Serial.println(speaker);
   Serial.println("+--------------------------------------+");
   Serial.print("| ");
-
-  for (uint16_t i = 0; text[i] != '\0' && i < visibleChars; i++) {
-    Serial.print(text[i]);
-  }
-
+  for (uint16_t i = 0; text[i] != '\0' && i < visibleChars; i++) Serial.print(text[i]);
   if (!textComplete) Serial.print("_");
   Serial.println();
   Serial.println("|");
-
   if (hasQuestion && textComplete) {
-    Serial.print("| ");
-    Serial.print(selectedOption == 0 ? "> " : "  ");
-    Serial.println(firstOption);
-    Serial.print("| ");
-    Serial.print(selectedOption == 1 ? "> " : "  ");
-    Serial.println(secondOption);
+    Serial.print("| "); Serial.print(selectedOption == 0 ? "> " : "  "); Serial.println(firstOption);
+    Serial.print("| "); Serial.print(selectedOption == 1 ? "> " : "  "); Serial.println(secondOption);
   } else if (textComplete) {
     Serial.println("| [CONFIRMAR] continuar");
   } else {
-    Serial.print("| digitando ");
-    Serial.print(visibleChars);
-    Serial.print("/");
-    Serial.println(total);
+    Serial.print("| digitando "); Serial.print(visibleChars); Serial.print("/"); Serial.println(total);
   }
-
   Serial.println("+--------------------------------------+");
 }
 
@@ -377,29 +282,19 @@ void DisplayDevice::begin() {
 }
 
 void DisplayDevice::showBoot(const String& message) {
-  Serial.print("[boot] ");
-  Serial.println(message);
-
+  Serial.print("[boot] "); Serial.println(message);
   lcd.fillScreen(COLOR_BG);
   drawScreenBorder();
-
-  lcd.setTextFont(1);
-  lcd.setTextSize(2);
+  lcd.setTextFont(1); lcd.setTextSize(2);
   lcd.setTextColor(COLOR_BLACK, COLOR_BG);
-  lcd.setCursor(34, 96);
-  lcd.print("PEDIDO.EXE");
-
+  lcd.setCursor(34, 96); lcd.print("PEDIDO.EXE");
   lcd.setTextSize(1);
   lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
-  lcd.setCursor(68, 126);
-  lcd.print(message);
+  lcd.setCursor(68, 126); lcd.print(message);
 }
 
 void DisplayDevice::showScene(const Scene& scene) {
-  Serial.print("[scene] ");
-  Serial.print(scene.id);
-  Serial.print(": ");
-  Serial.println(scene.text);
+  Serial.print("[scene] "); Serial.print(scene.id); Serial.print(": "); Serial.println(scene.text);
 }
 
 void DisplayDevice::showDialog(
@@ -411,26 +306,21 @@ void DisplayDevice::showDialog(
   const char* secondOption,
   uint8_t     selectedOption,
   bool        textComplete,
-  bool        firstFrame       // <-- novo parametro
+  bool        firstFrame
 ) {
   if (firstFrame) {
-    // Primeiro frame: desenha tudo do zero
-    // Fundo completo + borda. A area do gif (y>156) fica so com o fundo rosa,
-    // pronta para receber o asset sem mais toques.
     lcd.fillScreen(COLOR_BG);
     drawScreenBorder();
-
-    // Se ja tem pergunta desde o inicio (raro mas possivel), desenha opcoes
+    // reseta cursor para o inicio da area de texto
+    cursorCx = TEXT_X;
+    cursorCy = TEXT_Y;
     if (hasQuestion && textComplete) {
       redrawOptions(firstOption, secondOption, selectedOption);
     }
   }
 
-  // Sempre: atualiza so a area de texto (sem tocar borda nem gif)
   redrawTextArea(text, visibleChars, textComplete, hasQuestion);
 
-  // Opcoes: redesenha quando texto completou e ha pergunta
-  // Isso cobre tanto firstFrame=true quanto a transicao de texto->opcoes
   if (hasQuestion && textComplete) {
     redrawOptions(firstOption, secondOption, selectedOption);
   }
@@ -442,6 +332,55 @@ void DisplayDevice::showDialog(
   );
 }
 
+// Desenha apenas o proximo caractere sem apagar nada.
+// visibleChars ja foi incrementado — representa o indice do char recem adicionado.
+void DisplayDevice::drawNextChar(
+  const char* text,
+  uint16_t    visibleChars,
+  bool        textComplete
+) {
+  if (visibleChars == 0 || text == nullptr) return;
+
+  // cursorCx/cursorCy ja esta na posicao correta para o char atual.
+  // Nao recalcula chars anteriores — apenas processa o char em visibleChars-1.
+  uint16_t index = visibleChars - 1;
+  char c = text[index];
+  if (c == '\0') return;
+
+  // apaga cursor antigo antes de qualquer movimentacao
+  lcd.fillRect(cursorCx, cursorCy + 2, 6, 12, COLOR_BG);
+
+  bool draw = advanceCursor(text, index, cursorCx, cursorCy);
+
+  if (draw) {
+    lcd.setTextFont(1);
+    lcd.setTextSize(2);
+    lcd.setTextColor(COLOR_BLACK, COLOR_BG);
+    lcd.setCursor(cursorCx, cursorCy);
+    lcd.print(c);
+    cursorCx += CHAR_W;
+  }
+
+  // cursor na nova posicao ou indicador de completo
+  if (textComplete) {
+    lcd.setTextFont(1);
+    lcd.setTextSize(1);
+    lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
+    lcd.setCursor(218, 148);
+    lcd.print("v");
+  } else {
+    lcd.fillRect(cursorCx, cursorCy + 2, 6, 12, COLOR_PINK_DARK);
+  }
+}
+
+void DisplayDevice::redrawOptions(
+  const char* firstOption,
+  const char* secondOption,
+  uint8_t     selectedOption
+) {
+  ::redrawOptions(firstOption, secondOption, selectedOption);
+}
+
 void DisplayDevice::showEnding(
   uint8_t     pageIndex,
   uint8_t     pageCount,
@@ -450,147 +389,57 @@ void DisplayDevice::showEnding(
 ) {
   Serial.println();
   Serial.println("+--------------------------------------+");
-  Serial.print("| final ");
-  Serial.print(pageIndex + 1);
-  Serial.print("/");
-  Serial.println(pageCount);
-  Serial.print("| ");
-  Serial.println(title);
+  Serial.print("| final "); Serial.print(pageIndex + 1); Serial.print("/"); Serial.println(pageCount);
+  Serial.print("| "); Serial.println(title);
   Serial.println("+--------------------------------------+");
-  Serial.print("| ");
-  Serial.println(body);
+  Serial.print("| "); Serial.println(body);
   Serial.println("+--------------------------------------+");
 
   lcd.fillScreen(COLOR_BG);
   drawScreenBorder();
-
-  lcd.setTextFont(1);
-  lcd.setTextSize(2);
+  lcd.setTextFont(1); lcd.setTextSize(2);
   lcd.setTextColor(COLOR_BLACK, COLOR_BG);
-  lcd.setCursor(18, 70);
-  lcd.print(title);
-
+  lcd.setCursor(18, 70); lcd.print(title);
   lcd.setTextSize(1);
   lcd.setTextColor(COLOR_BLACK, COLOR_BG);
-  lcd.setCursor(18, 106);
-  lcd.print(body);
-
-  // paginacao discreta
+  lcd.setCursor(18, 106); lcd.print(body);
   lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
-  lcd.setCursor(18, 220);
-  lcd.print(pageIndex + 1);
-  lcd.print("/");
-  lcd.print(pageCount);
+  lcd.setCursor(18, 220); lcd.print(pageIndex + 1); lcd.print("/"); lcd.print(pageCount);
 }
 
 void DisplayDevice::showLocked(const String& message) {
-  Serial.print("[locked] ");
-  Serial.println(message);
-
+  Serial.print("[locked] "); Serial.println(message);
   lcd.fillScreen(COLOR_BLACK);
   lcd.setTextColor(COLOR_RED, COLOR_BLACK);
-  lcd.setTextFont(1);
-  lcd.setTextSize(2);
-  lcd.setCursor(28, 104);
-  lcd.print("BLOQUEADO");
-}
-
-void DisplayDevice::showHome(uint8_t selectedIndex) {
-  lcd.fillScreen(COLOR_BG);
-  drawScreenBorder();
-
-  lcd.setTextFont(1);
-  lcd.setTextSize(2);
-  lcd.setTextColor(COLOR_BLACK, COLOR_BG);
-  lcd.setCursor(42, 22);
-  lcd.print("PEDIDO.OS");
-
-  lcd.setTextSize(1);
-  lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
-  lcd.setCursor(58, 48);
-  lcd.print("selecione um app");
-
-  drawHomeApp(0, "MUSICA", 28, 88, selectedIndex);
-  drawHomeApp(1, "BLACK", 98, 88, selectedIndex);
-  drawHomeApp(2, "SET", 168, 88, selectedIndex);
-
-  lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
-  lcd.setCursor(28, 214);
-  lcd.print("N navegar   C abrir");
-
-  Serial.print("[home] selected ");
-  Serial.println(selectedIndex);
-}
-
-void DisplayDevice::showAppPlaceholder(const char* title, const char* subtitle) {
-  lcd.fillScreen(COLOR_BG);
-  drawScreenBorder();
-
-  lcd.setTextFont(1);
-  lcd.setTextSize(2);
-  lcd.setTextColor(COLOR_BLACK, COLOR_BG);
-  lcd.setCursor(24, 54);
-  lcd.print(title);
-
-  lcd.setTextSize(1);
-  lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
-  lcd.setCursor(24, 92);
-  lcd.print(subtitle);
-
-  lcd.setTextColor(COLOR_BLACK, COLOR_BG);
-  lcd.setCursor(24, 206);
-  lcd.print("C voltar para home");
-
-  Serial.print("[app] ");
-  Serial.println(title);
+  lcd.setTextFont(1); lcd.setTextSize(2);
+  lcd.setCursor(28, 104); lcd.print("BLOQUEADO");
 }
 
 void DisplayDevice::drawImageArea(const char* imagePath) {
   clearImageArea();
-
-  if (imagePath == nullptr || imagePath[0] == '\0') {
-    return;
-  }
+  if (imagePath == nullptr || imagePath[0] == '\0') return;
 
   fs::FS* fs = storage.fileSystemFor(imagePath);
   if (fs == nullptr) {
-    Serial.print("[display] image not found: ");
-    Serial.println(imagePath);
+    Serial.print("[display] image not found: "); Serial.println(imagePath);
     return;
   }
-
-  Serial.print("[display] draw BMP ");
-  Serial.print(imagePath);
-  Serial.print(" from ");
-  Serial.println(storage.sourceNameFor(imagePath));
+  Serial.print("[display] draw BMP "); Serial.println(imagePath);
   lcd.drawBmpFile(*fs, imagePath, IMAGE_X, IMAGE_AREA_Y);
 }
 
 void DisplayDevice::drawGifLine(int16_t x, int16_t y, int16_t width, const uint16_t* pixels) {
-  if (pixels == nullptr || width <= 0) {
-    return;
-  }
-
-  if (y < IMAGE_AREA_Y || y >= IMAGE_AREA_Y + IMAGE_AREA_H) {
-    return;
-  }
-
+  if (pixels == nullptr || width <= 0) return;
+  if (y < IMAGE_AREA_Y || y >= IMAGE_AREA_Y + IMAGE_AREA_H) return;
   if (x < IMAGE_X) {
     int16_t clipped = IMAGE_X - x;
     pixels += clipped;
-    width -= clipped;
-    x = IMAGE_X;
+    width  -= clipped;
+    x       = IMAGE_X;
   }
-
   int16_t maxRight = IMAGE_X + IMAGE_SIZE;
-  if (x + width > maxRight) {
-    width = maxRight - x;
-  }
-
-  if (width <= 0) {
-    return;
-  }
-
+  if (x + width > maxRight) width = maxRight - x;
+  if (width <= 0) return;
   lcd.pushImage(x, y, width, 1, pixels);
 }
 
@@ -598,96 +447,57 @@ void DisplayDevice::drawGifLine(int16_t x, int16_t y, int16_t width, const uint1
 
 void AudioDevice::begin() {
   storage.begin();
-
   audioOutput = new AudioOutputI2S();
   audioOutput->SetPinout(AUDIO_PIN_BCLK, AUDIO_PIN_LRC, AUDIO_PIN_DIN);
   audioOutput->SetOutputModeMono(true);
   audioOutput->SetGain(AUDIO_DEFAULT_GAIN);
-
   mp3 = new AudioGeneratorMP3();
-
   Serial.print("[audio] I2S MAX98357A ready: BCLK=");
-  Serial.print(AUDIO_PIN_BCLK);
-  Serial.print(" LRC=");
-  Serial.print(AUDIO_PIN_LRC);
-  Serial.print(" DIN=");
+  Serial.print(AUDIO_PIN_BCLK); Serial.print(" LRC=");
+  Serial.print(AUDIO_PIN_LRC);  Serial.print(" DIN=");
   Serial.println(AUDIO_PIN_DIN);
 }
 
 void AudioDevice::play(const char* audioPath) {
-  if (audioPath == nullptr || audioPath[0] == '\0') {
-    return;
-  }
-
-  Serial.print("[audio] play ");
-  Serial.println(audioPath);
-
+  if (audioPath == nullptr || audioPath[0] == '\0') return;
+  Serial.print("[audio] play "); Serial.println(audioPath);
   stop();
-
   fs::FS* fs = storage.fileSystemFor(audioPath);
   if (fs == nullptr) {
-    Serial.print("[audio] file not found: ");
-    Serial.println(audioPath);
+    Serial.print("[audio] file not found: "); Serial.println(audioPath);
     return;
   }
-
   if (mp3 == nullptr || audioOutput == nullptr) {
-    Serial.println("[audio] not initialized");
-    return;
+    Serial.println("[audio] not initialized"); return;
   }
-
-  Serial.print("[audio] source ");
-  Serial.println(storage.sourceNameFor(audioPath));
-
   audioFile = new AudioFileSourceFS(*fs, audioPath);
-
   if (!mp3->begin(audioFile, audioOutput)) {
     Serial.println("[audio] MP3 decoder failed to start");
-    delete audioFile;
-    audioFile = nullptr;
-    return;
+    delete audioFile; audioFile = nullptr; return;
   }
-
   lastAudioStatusLog = millis();
   Serial.println("[audio] MP3 decoder started");
 }
 
 void AudioDevice::stop() {
-  if (mp3 != nullptr && mp3->isRunning()) {
-    mp3->stop();
-  }
-
-  if (audioFile != nullptr) {
-    delete audioFile;
-    audioFile = nullptr;
-  }
+  if (mp3 != nullptr && mp3->isRunning()) mp3->stop();
+  if (audioFile != nullptr) { delete audioFile; audioFile = nullptr; }
 }
 
 void AudioDevice::update() {
-  if (mp3 == nullptr || !mp3->isRunning()) {
-    return;
-  }
-
+  if (mp3 == nullptr || !mp3->isRunning()) return;
   uint32_t now = millis();
-  if (now - lastAudioStatusLog > 1000) {
+  if (now - lastAudioStatusLog > 5000) {
     lastAudioStatusLog = now;
     Serial.println("[audio] playing");
   }
-
-  if (!mp3->loop()) {
-    stop();
-    Serial.println("[audio] finished");
-  }
+  if (!mp3->loop()) { stop(); Serial.println("[audio] finished"); }
 }
 
-bool AudioDevice::isPlaying() {
-  return mp3 != nullptr && mp3->isRunning();
-}
+bool AudioDevice::isPlaying() { return mp3 != nullptr && mp3->isRunning(); }
 
 void AudioDevice::setGain(float gain) {
-  if (audioOutput != nullptr) {
-    audioOutput->SetGain(gain);
-  }
+  if (audioOutput != nullptr) audioOutput->SetGain(gain);
 }
 
 // --- ButtonInput -------------------------------------------------------------
@@ -704,16 +514,7 @@ SceneAction ButtonInput::readAction() {
     if (input == 'n') return SceneAction::Navigate;
     if (input == 'i') return SceneAction::OpenHome;
   }
-
-  if (isPressed(CONFIRM_BUTTON_PIN)) {
-    delay(180);
-    return SceneAction::Confirm;
-  }
-
-  if (isPressed(NAVIGATE_BUTTON_PIN)) {
-    delay(180);
-    return SceneAction::Navigate;
-  }
-
+  if (isPressed(CONFIRM_BUTTON_PIN))  { delay(180); return SceneAction::Confirm; }
+  if (isPressed(NAVIGATE_BUTTON_PIN)) { delay(180); return SceneAction::Navigate; }
   return SceneAction::None;
 }
