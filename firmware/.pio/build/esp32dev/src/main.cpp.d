@@ -134,6 +134,6 @@
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
  include/AppConfig.h include/Devices.h include/Scene.h \
- .pio/libdeps/esp32dev/AnimatedGIF/src/AnimatedGIF.h \
- C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/libraries/SPIFFS/src/SPIFFS.h \
- C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h
+ include/StorageDevice.h \
+ C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h \
+ .pio/libdeps/esp32dev/AnimatedGIF/src/AnimatedGIF.h

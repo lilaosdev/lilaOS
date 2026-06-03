@@ -325,11 +325,15 @@ void DisplayDevice::showDialog(
     redrawOptions(firstOption, secondOption, selectedOption);
   }
 
-  drawSerialDialogPreview(
-    speaker, text, visibleChars,
-    hasQuestion, firstOption, secondOption,
-    selectedOption, textComplete
-  );
+  // preview serial apenas no firstFrame — evita Serial.print a cada char do typewriter
+  // que bloqueava a CPU e causava underrun no decoder MP3
+  if (firstFrame) {
+    drawSerialDialogPreview(
+      speaker, text, visibleChars,
+      hasQuestion, firstOption, secondOption,
+      selectedOption, textComplete
+    );
+  }
 }
 
 // Desenha apenas o proximo caractere sem apagar nada.
@@ -441,6 +445,146 @@ void DisplayDevice::drawGifLine(int16_t x, int16_t y, int16_t width, const uint1
   if (x + width > maxRight) width = maxRight - x;
   if (width <= 0) return;
   lcd.pushImage(x, y, width, 1, pixels);
+}
+
+// --- DisplayDevice system UI -------------------------------------------------
+
+// helpers de tema — fora do namespace anonimo pois sao usados pelas funcoes publicas abaixo
+static uint16_t systemBg(uint8_t themeId)     { return themeId == 0 ? COLOR_BG    : 0x012B; }
+static uint16_t systemText(uint8_t themeId)   { return themeId == 0 ? COLOR_BLACK : 0xFFFF; }
+static uint16_t systemAccent(uint8_t themeId) { return themeId == 0 ? COLOR_PINK_DARK : 0x07FF; }
+static uint16_t systemSoft(uint8_t themeId)   { return themeId == 0 ? COLOR_PINK  : 0x04D6; }
+static const char* themeName(uint8_t themeId) { return themeId == 0 ? "LILA" : "KALSING"; }
+
+static void drawSystemBorder(uint8_t themeId) {
+  uint16_t accent = systemAccent(themeId);
+  uint16_t soft   = systemSoft(themeId);
+  lcd.drawRect(4, 4, 232, 232, accent);
+  lcd.drawRect(7, 7, 226, 226, soft);
+  lcd.fillRect(4,   4,   8, 8, accent);
+  lcd.fillRect(228, 4,   8, 8, accent);
+  lcd.fillRect(4,   228, 8, 8, accent);
+  lcd.fillRect(228, 228, 8, 8, accent);
+}
+
+static void drawSystemShell(const char* title, uint8_t themeId) {
+  uint16_t bg     = systemBg(themeId);
+  uint16_t fg     = systemText(themeId);
+  uint16_t accent = systemAccent(themeId);
+  lcd.fillScreen(bg);
+  drawSystemBorder(themeId);
+  lcd.setTextFont(1); lcd.setTextSize(1);
+  lcd.setTextColor(accent, bg);
+  lcd.setCursor(18, 14); lcd.print("pedido.os / "); lcd.print(themeName(themeId));
+  lcd.setTextSize(2);
+  lcd.setTextColor(fg, bg);
+  lcd.setCursor(18, 32); lcd.print(title);
+}
+
+static void drawSelectableRow(int32_t y, const char* label, bool selected, uint8_t themeId) {
+  uint16_t bg     = systemBg(themeId);
+  uint16_t fg     = systemText(themeId);
+  uint16_t accent = systemAccent(themeId);
+  uint16_t soft   = systemSoft(themeId);
+  if (selected) {
+    lcd.fillRect(18, y, 204, 24, accent);
+    lcd.setTextColor(bg, accent);
+  } else {
+    lcd.fillRect(18, y, 204, 24, bg);
+    lcd.drawRect(18, y, 204, 24, soft);
+    lcd.setTextColor(fg, bg);
+  }
+  lcd.setTextFont(1); lcd.setTextSize(2);
+  lcd.setCursor(26, y + 5); lcd.print(label);
+}
+
+static void drawMusicGlyph(int32_t x, int32_t y, uint16_t color) {
+  lcd.fillRect(x + 28, y + 18, 6,  34, color);
+  lcd.fillRect(x + 34, y + 18, 22, 6,  color);
+  lcd.fillRect(x + 52, y + 18, 6,  30, color);
+  lcd.fillRect(x + 18, y + 48, 18, 12, color);
+  lcd.fillRect(x + 42, y + 44, 18, 12, color);
+}
+
+void DisplayDevice::showLauncher(uint8_t selectedApp, uint8_t themeId) {
+  drawSystemShell("inicio", themeId);
+  drawSelectableRow(72,  "musicas",   selectedApp == 0, themeId);
+  drawSelectableRow(102, "ajustes",   selectedApp == 1, themeId);
+  drawSelectableRow(132, "blackjack", selectedApp == 2, themeId);
+  uint16_t bg     = systemBg(themeId);
+  uint16_t accent = systemAccent(themeId);
+  lcd.setTextFont(1); lcd.setTextSize(1);
+  lcd.setTextColor(accent, bg);
+  lcd.setCursor(20, 210); lcd.print("n navega  c abre  i inicio");
+}
+
+void DisplayDevice::showSettings(uint8_t selectedRow, uint8_t volumeLevel, uint8_t themeId) {
+  drawSystemShell("ajustes", themeId);
+  char volumeLabel[20]; snprintf(volumeLabel, sizeof(volumeLabel), "volume %u/5", volumeLevel);
+  char themeLabel[24];  snprintf(themeLabel,  sizeof(themeLabel),  "tema %s", themeName(themeId));
+  drawSelectableRow(78,  volumeLabel, selectedRow == 0, themeId);
+  drawSelectableRow(108, themeLabel,  selectedRow == 1, themeId);
+  drawSelectableRow(138, "voltar",    selectedRow == 2, themeId);
+  uint16_t bg     = systemBg(themeId);
+  uint16_t accent = systemAccent(themeId);
+  lcd.setTextFont(1); lcd.setTextSize(1);
+  lcd.setTextColor(accent, bg);
+  lcd.setCursor(20, 206); lcd.print("c altera / abre  n navega");
+}
+
+void DisplayDevice::showMusicPlayer(
+  const char* heading,
+  const char* trackName,
+  uint8_t     selectedControl,
+  bool        paused,
+  uint8_t     themeId
+) {
+  drawSystemShell("musicas", themeId);
+  uint16_t bg     = systemBg(themeId);
+  uint16_t fg     = systemText(themeId);
+  uint16_t accent = systemAccent(themeId);
+  uint16_t soft   = systemSoft(themeId);
+
+  lcd.setTextFont(1); lcd.setTextSize(1);
+  lcd.setTextColor(accent, bg);
+  lcd.setCursor(60, 58); lcd.print(heading);
+
+  lcd.drawRect(78, 74, 84, 84, soft);
+  drawMusicGlyph(78, 74, accent);
+
+  lcd.setTextColor(fg, bg);
+  lcd.setCursor(28, 166); lcd.print(trackName);
+  lcd.setCursor(94, 180); lcd.print(paused ? "pausado" : "tocando");
+
+  const char* controls[] = { "<", paused ? ">" : "||", ">>", "home" };
+  int xs[] = { 28, 76, 124, 166 };
+  for (uint8_t i = 0; i < 4; i++) {
+    bool sel = selectedControl == i;
+    int w = (i == 3) ? 50 : 34;
+    if (sel) {
+      lcd.fillRect(xs[i], 198, w, 22, accent);
+      lcd.setTextColor(bg, accent);
+    } else {
+      lcd.fillRect(xs[i], 198, w, 22, bg);
+      lcd.drawRect(xs[i], 198, w, 22, soft);
+      lcd.setTextColor(fg, bg);
+    }
+    lcd.setTextSize(1);
+    lcd.setCursor(xs[i] + 8, 205); lcd.print(controls[i]);
+  }
+}
+
+void DisplayDevice::showPlaceholderApp(const char* title, const char* body, uint8_t themeId) {
+  drawSystemShell(title, themeId);
+  uint16_t bg     = systemBg(themeId);
+  uint16_t fg     = systemText(themeId);
+  uint16_t accent = systemAccent(themeId);
+  lcd.setTextFont(1); lcd.setTextSize(2);
+  lcd.setTextColor(fg, bg);
+  lcd.setCursor(28, 96); lcd.print(body);
+  lcd.setTextSize(1);
+  lcd.setTextColor(accent, bg);
+  lcd.setCursor(36, 208); lcd.print("c ou i para voltar");
 }
 
 // --- AudioDevice -------------------------------------------------------------
