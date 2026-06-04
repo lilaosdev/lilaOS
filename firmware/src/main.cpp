@@ -32,13 +32,20 @@ struct MusicTrack {
 };
 
 constexpr MusicTrack LILA_PLAYLIST[] = {
-  { "Minha Namorada20S",  "/audio/minhanamorada20s.mp3" },
-  { "Minha Namorada Inteiro",    "/audio/Minha_Namorada_Mixado.mp3" },
+  { "Minha Namorada20S", "/audio/minhanamorada20s.mp3" },
+  { "Minha Namorada",    "/audio/Minha_Namorada_Mixado.mp3" },
+  { "Safeword",          "/audio/Safeword_Mixado.mp3" },
+  { "Romance",           "/audio/Romance_Mixado.mp3" },
+  { "Carta ao Tom 74",   "/audio/Carta74_Mixado.mp3" },
+  { "T.B.H",             "/audio/QWER_Mixado.mp3" },
 };
 
 constexpr MusicTrack KALSING_PLAYLIST[] = {
-  { "Kalsing Mix", "/audio/1_Minha_Namorada_(Instrumental).mp3" },
-  { "DevKit Rosa", "/audio/minhanamorada20s.mp3" },
+  { "Beamer Boy", "/audio/BeamerBoy_Mixado.mp3" },
+  { "Harvest Moon", "/audio/Harvest_Moon_Mixado.mp3" },
+  { "My Flaws Burn Through My Skin", "/audio/MyFlawsBurn_Mixado.mp3" },
+  { "Fuck Love", "/audio/FuckLove_Mixado.mp3" },
+  { "Witchblades", "/audio/Witchblades_Mixado.mp3" },
 };
 
 SystemScreen currentScreen   = SystemScreen::Home;
@@ -80,7 +87,7 @@ const char* musicHeading() {
 }
 
 float gainForVolume(uint8_t level) {
-  constexpr float gains[] = { 0.0f, 0.08f, 0.16f, 0.25f, 0.35f, 0.50f };
+  constexpr float gains[] = { 0.0f, 0.08f, 0.20f, 0.3f, 0.4f, 0.6f };
   if (level > 5) level = 5;
   return gains[level];
 }
@@ -140,7 +147,7 @@ void updateGlobalMusic() {
 void renderHome() {
   currentScreen = SystemScreen::Home;
   stopGif();
-  display.showLauncher(homeSelection, themeByte());
+  display.showLauncher(homeSelection, themeByte(), currentTrack().title);
 }
 
 void renderSettings() {
@@ -264,13 +271,19 @@ struct DialogStep {
 };
 
 DialogStep dialog[] = {
-  { "SISTEMA",  "Oi lila, tudo bem?",                                                                    false, "", "", "", "/img/gato3bmp.bmp",    false },
-  { "EU",       "desenvolvi esse projeto pensando em uma maneira de presentear uma pessoa tao especial", false, "", "", "", "/img/gato4bmp.bmp",    false },
+  { "SISTEMA",  "oi lila, tudo bem?",                                                                    false, "", "", "", "/img/gatinho8bmp.bmp",    false },
+  { "EU",       "desenvolvi esse projeto pensando em uma maneira de presentear uma pessoa tao especial", false, "", "", "", "/img/gatinho7bmp.bmp",    false },
   { "EU",       "desde muito tempo venho pensando em como de enviar essa mensagem de uma maneira legal", false, "", "", "", "/img/gato5bmp.bmp",    false },
   { "EU",       "e essa foi a forma que encontrei. espero que goste :)",                                 false, "", "", "", "/img/gato4bmp.bmp",    false },
-  { "EU",       "toda a ideia, estetica, eletronica e codigo dele foram montadas por mim",              false, "", "", "", "/img/gato1bmptrue.bmp", false },
-  { "EU",       "foi bem dificil mas nada se comparou a dificuldade de encontrar as palavras que queria colocar aqui", false, "", "", "", "/img/gato1bmptrue.bmp", false },
-  { "PERGUNTA", "Quer namorar comigo?",                                                                  true, "Sim", "Nao", "", "/img/rezegif3.gif", true  },
+  { "EU",       "toda a ideia, estetica, eletronica e codigo dele foram montadas por mim",              false, "", "", "", "/img/gatinho6bmp.bmp", false },
+  { "EU",       "foi um projeto bem complicado mas nenhum codigo ou eletronica se comparou com a", false, "", "", "", "/img/gato1bmptrue.bmp", false },
+  { "EU",       "dificuldade de encontrar as palavras que queria colocar aqui", false, "", "", "", "/img/gato1bmptrue.bmp", false },
+  { "EU",       "o kalsing desde de 2024 queria muito te contar uma coisa", false, "", "", "", "/img/gato1bmptrue.bmp", false },
+  { "EU",       "mas ele deixou pro kalsing de 2026 falar..", false, "", "", "", "/img/gato1bmptrue.bmp", false },
+  { "EU",       "que te ama muito muito muito muito demais da conta", false, "", "", "", "/img/gato1bmptrue.bmp", false },
+
+  { "EU",       "e que por isso queria perguntar se", false, "", "", "", "/img/gato1bmptrue.bmp", false },
+  { "PERGUNTA", "Quer ser minha amada pra valer?",                                                                  true, "Sim", "Nao", "", "/img/rezegif3.gif", true  },
 };
 
 constexpr uint8_t  DIALOG_COUNT          = sizeof(dialog) / sizeof(dialog[0]);
@@ -500,7 +513,7 @@ void setup() {
   }
 
   delay(650);
-  renderHome();
+  enterDialog(0);
   playCurrentTrack();
 }
 
@@ -508,7 +521,19 @@ void loop() {
   // 1. audio primeiro — maxima prioridade, sem nada antes que bloqueie
   audio.update();
 
-  // 2. input — nao bloqueia, so le o estado atual
+  // 2. input — dev phase overrides & botões físicos
+  if (Serial.available()) {
+    char devInput = Serial.peek();
+    if (devInput == 'b' || devInput == 'B') {
+      Serial.read(); // Consome o caractere 'B'
+      renderHome();  // Vai para a tela de seleção de apps (Home)
+    } else if (devInput == 'u' || devInput == 'U') {
+      Serial.read(); // Consome o caractere 'U'
+      enterDialog(0); // Reinicia os diálogos do zero para testes
+    }
+  }
+
+  // Processamento normal dos botões (físicos ou comandos 'c', 'n', 'i')
   SceneAction action = buttons.readAction();
   if (action == SceneAction::Confirm) {
     handleConfirm();
@@ -531,5 +556,4 @@ void loop() {
   audio.update();
 
   // sem delay fixo — loop roda na velocidade maxima do ESP32
-  // o timing de cada subsistema e controlado pelos proprios millis()
 }

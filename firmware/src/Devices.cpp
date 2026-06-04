@@ -287,7 +287,7 @@ void DisplayDevice::showBoot(const String& message) {
   drawScreenBorder();
   lcd.setTextFont(1); lcd.setTextSize(2);
   lcd.setTextColor(COLOR_BLACK, COLOR_BG);
-  lcd.setCursor(34, 96); lcd.print("PEDIDO.EXE");
+  lcd.setCursor(34, 96); lcd.print("BOOT");
   lcd.setTextSize(1);
   lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
   lcd.setCursor(68, 126); lcd.print(message);
@@ -450,10 +450,10 @@ void DisplayDevice::drawGifLine(int16_t x, int16_t y, int16_t width, const uint1
 // --- DisplayDevice system UI -------------------------------------------------
 
 // helpers de tema — fora do namespace anonimo pois sao usados pelas funcoes publicas abaixo
-static uint16_t systemBg(uint8_t themeId)     { return themeId == 0 ? COLOR_BG    : 0x012B; }
-static uint16_t systemText(uint8_t themeId)   { return themeId == 0 ? COLOR_BLACK : 0xFFFF; }
-static uint16_t systemAccent(uint8_t themeId) { return themeId == 0 ? COLOR_PINK_DARK : 0x07FF; }
-static uint16_t systemSoft(uint8_t themeId)   { return themeId == 0 ? COLOR_PINK  : 0x04D6; }
+static uint16_t systemBg(uint8_t themeId)     { return themeId == 0 ? COLOR_BG       : COLOR_BLACK; }
+static uint16_t systemText(uint8_t themeId)   { return themeId == 0 ? COLOR_BLACK    : 0xFFFF; }
+static uint16_t systemAccent(uint8_t themeId) { return themeId == 0 ? COLOR_PINK_DARK : COLOR_RED; }
+static uint16_t systemSoft(uint8_t themeId)   { return themeId == 0 ? COLOR_PINK     : 0x8000; }
 static const char* themeName(uint8_t themeId) { return themeId == 0 ? "LILA" : "KALSING"; }
 
 static void drawSystemBorder(uint8_t themeId) {
@@ -498,24 +498,108 @@ static void drawSelectableRow(int32_t y, const char* label, bool selected, uint8
   lcd.setCursor(26, y + 5); lcd.print(label);
 }
 
-static void drawMusicGlyph(int32_t x, int32_t y, uint16_t color) {
-  lcd.fillRect(x + 28, y + 18, 6,  34, color);
-  lcd.fillRect(x + 34, y + 18, 22, 6,  color);
-  lcd.fillRect(x + 52, y + 18, 6,  30, color);
-  lcd.fillRect(x + 18, y + 48, 18, 12, color);
-  lcd.fillRect(x + 42, y + 44, 18, 12, color);
+// pixel-art: nota musical
+static void drawIconMusic(int32_t x, int32_t y, uint16_t color) {
+  lcd.fillRect(x,     y,      3, 14, color); // haste esquerda
+  lcd.fillRect(x,     y,      8,  3, color); // barra horizontal
+  lcd.fillRect(x + 8, y,      3, 12, color); // haste direita
+  lcd.fillRect(x - 3, y + 11, 9,  4, color); // bolinha esquerda
+  lcd.fillRect(x + 5, y +  9, 9,  4, color); // bolinha direita
 }
 
-void DisplayDevice::showLauncher(uint8_t selectedApp, uint8_t themeId) {
-  drawSystemShell("inicio", themeId);
-  drawSelectableRow(72,  "musicas",   selectedApp == 0, themeId);
-  drawSelectableRow(102, "ajustes",   selectedApp == 1, themeId);
-  drawSelectableRow(132, "blackjack", selectedApp == 2, themeId);
+// pixel-art: engrenagem simplificada
+static void drawIconSettings(int32_t x, int32_t y, uint16_t color, uint16_t bg) {
+  lcd.fillRect(x + 3, y,      4,  3, color); // dente cima
+  lcd.fillRect(x,     y + 3,  10, 7, color); // corpo
+  lcd.fillRect(x + 3, y + 10, 4,  3, color); // dente baixo
+  lcd.fillRect(x + 4, y + 4,  2,  5, bg);    // furo central
+}
+
+// pixel-art: carta (Ás)
+static void drawIconCard(int32_t x, int32_t y, uint16_t color, uint16_t bg) {
+  lcd.drawRect(x, y, 10, 14, color);
+  lcd.setTextFont(1); lcd.setTextSize(1);
+  lcd.setTextColor(color, bg);
+  lcd.setCursor(x + 2, y + 2); lcd.print("A");
+  lcd.setCursor(x + 3, y + 8); lcd.print("*");
+}
+
+// pixel-art: ícone play (triângulo em escada)
+static void drawIconPlay(int32_t x, int32_t y, uint16_t color) {
+  lcd.fillRect(x,     y,      3, 10, color);
+  lcd.fillRect(x + 3, y + 2,  3,  6, color);
+  lcd.fillRect(x + 6, y + 4,  3,  2, color);
+}
+
+static void drawLauncherRow(
+  int32_t     y,
+  const char* label,
+  uint8_t     iconId,   // 0=music 1=settings 2=card
+  bool        selected,
+  uint8_t     themeId
+) {
+  constexpr int32_t ROW_X   = 18;
+  constexpr int32_t ROW_W   = 204;
+  constexpr int32_t ROW_H   = 36;
+  constexpr int32_t ICON_X  = 30;
+  constexpr int32_t LABEL_X = 52;
+
+  uint16_t bg     = systemBg(themeId);
+  uint16_t fg     = systemText(themeId);
+  uint16_t accent = systemAccent(themeId);
+  uint16_t soft   = systemSoft(themeId);
+
+  uint16_t rowBg = selected ? accent : bg;
+  uint16_t rowFg = selected ? bg     : fg;
+
+  lcd.fillRect(ROW_X, y, ROW_W, ROW_H, rowBg);
+  if (!selected) lcd.drawRect(ROW_X, y, ROW_W, ROW_H, soft);
+
+  int32_t iconY = y + 11;
+  if      (iconId == 0) drawIconMusic(ICON_X,    iconY, rowFg);
+  else if (iconId == 1) drawIconSettings(ICON_X, iconY, rowFg, rowBg);
+  else                  drawIconCard(ICON_X,     iconY, rowFg, rowBg);
+
+  lcd.setTextFont(1); lcd.setTextSize(1);
+  lcd.setTextColor(rowFg, rowBg);
+  lcd.setCursor(LABEL_X, y + 13);
+  lcd.print(label);
+}
+
+void DisplayDevice::showLauncher(uint8_t selectedApp, uint8_t themeId, const char* nowPlaying) {
   uint16_t bg     = systemBg(themeId);
   uint16_t accent = systemAccent(themeId);
+  uint16_t soft   = systemSoft(themeId);
+  uint16_t fg     = systemText(themeId);
+
+  lcd.fillScreen(bg);
+  drawSystemBorder(themeId);
+
+  // rows sem header nem título
+  drawLauncherRow(60,  "musicas",   0, selectedApp == 0, themeId);
+  drawLauncherRow(102, "ajustes",   1, selectedApp == 1, themeId);
+  drawLauncherRow(144, "blackjack", 2, selectedApp == 2, themeId);
+
+  // barra now playing
+  constexpr int32_t BAR_X = 12;
+  constexpr int32_t BAR_Y = 196;
+  constexpr int32_t BAR_W = 216;
+  constexpr int32_t BAR_H = 32;
+
+  lcd.fillRect(BAR_X, BAR_Y, BAR_W, BAR_H, bg);
+  lcd.drawRect(BAR_X, BAR_Y, BAR_W, BAR_H, soft);
+
+  drawIconPlay(BAR_X + 8, BAR_Y + 11, accent);
+
   lcd.setTextFont(1); lcd.setTextSize(1);
   lcd.setTextColor(accent, bg);
-  lcd.setCursor(20, 210); lcd.print("n navega  c abre  i inicio");
+  lcd.setCursor(BAR_X + 22, BAR_Y + 8);
+  lcd.print("NOW PLAYING");
+
+  lcd.setTextColor(fg, bg);
+  lcd.setCursor(BAR_X + 22, BAR_Y + 19);
+  if (nowPlaying && nowPlaying[0] != '\0') lcd.print(nowPlaying);
+  else lcd.print("...");
 }
 
 void DisplayDevice::showSettings(uint8_t selectedRow, uint8_t volumeLevel, uint8_t themeId) {
@@ -550,7 +634,7 @@ void DisplayDevice::showMusicPlayer(
   lcd.setCursor(60, 58); lcd.print(heading);
 
   lcd.drawRect(78, 74, 84, 84, soft);
-  drawMusicGlyph(78, 74, accent);
+  drawIconMusic(99, 92, accent);
 
   lcd.setTextColor(fg, bg);
   lcd.setCursor(28, 166); lcd.print(trackName);
