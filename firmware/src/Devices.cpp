@@ -21,11 +21,11 @@ constexpr uint16_t COLOR_RED       = 0xF800;
 constexpr int32_t TEXT_X = 18;
 constexpr int32_t TEXT_Y = 20;
 constexpr int32_t TEXT_W = 204;
-constexpr int32_t TEXT_H = 136;
+constexpr int32_t TEXT_H = 128;
 constexpr int32_t LINE_H = 20;
 constexpr int32_t CHAR_W = 12;
 
-constexpr int32_t OPT_Y  = 148;
+constexpr int32_t OPT_Y  = 132;
 constexpr int32_t OPT_H  = 22;
 constexpr int32_t OPT1_X = 18;
 constexpr int32_t OPT2_X = 126;
