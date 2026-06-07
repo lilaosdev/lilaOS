@@ -21,11 +21,11 @@ constexpr uint16_t COLOR_RED       = 0xF800;
 constexpr int32_t TEXT_X = 18;
 constexpr int32_t TEXT_Y = 20;
 constexpr int32_t TEXT_W = 204;
-constexpr int32_t TEXT_H = 128;
+constexpr int32_t TEXT_H = 136;
 constexpr int32_t LINE_H = 20;
 constexpr int32_t CHAR_W = 12;
 
-constexpr int32_t OPT_Y  = 132;
+constexpr int32_t OPT_Y  = 148;
 constexpr int32_t OPT_H  = 22;
 constexpr int32_t OPT1_X = 18;
 constexpr int32_t OPT2_X = 126;
@@ -287,7 +287,7 @@ void DisplayDevice::showBoot(const String& message) {
   drawScreenBorder();
   lcd.setTextFont(1); lcd.setTextSize(2);
   lcd.setTextColor(COLOR_BLACK, COLOR_BG);
-  lcd.setCursor(34, 96); lcd.print("BOOT");
+  lcd.setCursor(34, 96); lcd.print("PEDIDO.EXE");
   lcd.setTextSize(1);
   lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
   lcd.setCursor(68, 126); lcd.print(message);
@@ -564,6 +564,18 @@ static void drawLauncherRow(
   lcd.setTextColor(rowFg, rowBg);
   lcd.setCursor(LABEL_X, y + 13);
   lcd.print(label);
+}
+
+void DisplayDevice::showStart() {
+  lcd.fillScreen(COLOR_BG);
+  drawScreenBorder();
+  lcd.setTextFont(1); lcd.setTextSize(2);
+  lcd.setTextColor(COLOR_BLACK, COLOR_BG);
+  lcd.setCursor(34, 90); lcd.print("PEDIDO.EXE");
+  lcd.setTextSize(1);
+  lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
+  lcd.setCursor(46, 118); lcd.print("pressione [c]");
+  lcd.setCursor(54, 132); lcd.print("para iniciar");
 }
 
 void DisplayDevice::showLauncher(uint8_t selectedApp, uint8_t themeId, const char* nowPlaying) {
