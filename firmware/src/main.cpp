@@ -294,13 +294,15 @@ DialogStep dialog[] = {
   { "EU",       "desde muito tempo venho pensando em como de enviar essa mensagem de uma maneira legal", false, "", "", "", "/img/gato5bmp.bmp",    false },
   { "EU",       "e essa foi a forma que encontrei. espero que goste :)",                                 false, "", "", "", "/img/gato4bmp.bmp",    false },
   { "EU",       "toda a ideia, estetica, eletronica e codigo dele foram montadas por mim",              false, "", "", "", "/img/gatinho6bmp.bmp", false },
-  { "EU",       "foi bem dificil mas nada se comparou a dificuldade de encontrar as palavras que queria colocar aqui", false, "", "", "", "/img/gato1bmptrue.bmp", false },
-  { "EU",       "o kalsing desde de 2024 queria muito te contar uma coisa", false, "", "", "", "/img/gato1bmptrue.bmp", false },
-  { "EU",       "mas ele deixou pro kalsing de 2026 falar..", false, "", "", "", "/img/gato1bmptrue.bmp", false },
-  { "EU",       "que te ama muito muito muito muito demais da conta", false, "", "", "", "/img/gato1bmptrue.bmp", false },
+  { "EU",       "passei algumas madrugadas resolvendo bug sou literalmente ele",              false, "", "", "", "/img/gatinho10bmp.bmp", false },
+  { "EU",       "foi bem complicado mas nenhum codigo ou eletronica se comparou com a", false, "", "", "", "/img/gatinho14bmp.bmp", false },
+  { "EU",       "dificuldade de encontrar as palavras que queria colocar aqui", false, "", "", "", "/img/gatinho15bmp.bmp", false },
+  { "EU",       "e o kalsing desde de 2024 queria muito te contar uma coisa", false, "", "", "", "/img/gatinho11bmp.bmp", false },
+  { "EU",       "mas ele deixou pro kalsing de 2026 falar..", false, "", "", "", "/img/gatinho9bmp.bmp", false },
+  { "EU",       "que eu te amo muito muito muito muito demais da conta", false, "", "", "", "/img/gatinho15bmp.bmp", false },
 
-  { "EU",       "e que por isso queria perguntar se", false, "", "", "", "/img/gato1bmptrue.bmp", false },
-  { "PERGUNTA", "Quer ser minha amada pra valer?",                                                                  true, "Sim", "Nao", "", "/img/rezegif3.gif", true  },
+  { "EU",       "e que por isso queria perguntar se", false, "", "", "", "/img/gatinho12bmp.bmp", false },
+  { "PERGUNTA", "quer ser minha amada pra valer?",                                                                  true, "Sim", "Nao", "", "/img/gatinho17bmp.bmp", false  },
 };
 
 constexpr uint8_t  DIALOG_COUNT          = sizeof(dialog) / sizeof(dialog[0]);
