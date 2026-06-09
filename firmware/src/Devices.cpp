@@ -17,6 +17,10 @@ constexpr uint16_t COLOR_BLACK     = 0x0000;
 constexpr uint16_t COLOR_PINK      = 0xF8B2;
 constexpr uint16_t COLOR_PINK_DARK = 0xF389;
 constexpr uint16_t COLOR_RED       = 0xF800;
+constexpr uint16_t COLOR_TERM_BG   = 0x1005;
+constexpr uint16_t COLOR_TERM_DARK = 0x380D;
+constexpr uint16_t COLOR_TERM_TEXT = 0xFE7A;
+constexpr uint16_t COLOR_TERM_DIM  = 0xB135;
 
 constexpr int32_t TEXT_X = 18;
 constexpr int32_t TEXT_Y = 20;
@@ -525,6 +529,13 @@ static void drawIconCard(int32_t x, int32_t y, uint16_t color, uint16_t bg) {
 }
 
 // pixel-art: ícone play (triângulo em escada)
+static void drawIconTerminal(int32_t x, int32_t y, uint16_t color) {
+  lcd.drawRect(x, y, 14, 12, color);
+  lcd.drawLine(x + 2, y + 3, x + 5, y + 5, color);
+  lcd.drawLine(x + 2, y + 7, x + 5, y + 5, color);
+  lcd.drawLine(x + 7, y + 8, x + 11, y + 8, color);
+}
+
 static void drawIconPlay(int32_t x, int32_t y, uint16_t color) {
   lcd.fillRect(x,     y,      3, 10, color);
   lcd.fillRect(x + 3, y + 2,  3,  6, color);
@@ -534,7 +545,7 @@ static void drawIconPlay(int32_t x, int32_t y, uint16_t color) {
 static void drawLauncherRow(
   int32_t     y,
   const char* label,
-  uint8_t     iconId,   // 0=music 1=settings 2=card
+  uint8_t     iconId,   // 0=music 1=settings 2=terminal 3=card
   bool        selected,
   uint8_t     themeId
 ) {
@@ -558,6 +569,7 @@ static void drawLauncherRow(
   int32_t iconY = y + 11;
   if      (iconId == 0) drawIconMusic(ICON_X,    iconY, rowFg);
   else if (iconId == 1) drawIconSettings(ICON_X, iconY, rowFg, rowBg);
+  else if (iconId == 2) drawIconTerminal(ICON_X, iconY, rowFg);
   else                  drawIconCard(ICON_X,     iconY, rowFg, rowBg);
 
   lcd.setTextFont(1); lcd.setTextSize(1);
@@ -590,7 +602,7 @@ void DisplayDevice::showLauncher(uint8_t selectedApp, uint8_t themeId, const cha
   // rows sem header nem título
   drawLauncherRow(60,  "musicas",   0, selectedApp == 0, themeId);
   drawLauncherRow(102, "ajustes",   1, selectedApp == 1, themeId);
-  drawLauncherRow(144, "blackjack", 2, selectedApp == 2, themeId);
+  drawLauncherRow(144, "terminal",  2, selectedApp == 2, themeId);
 
   // barra now playing
   constexpr int32_t BAR_X = 12;
@@ -668,6 +680,97 @@ void DisplayDevice::showMusicPlayer(
     lcd.setTextSize(1);
     lcd.setCursor(xs[i] + 8, 205); lcd.print(controls[i]);
   }
+}
+
+static void drawTerminalShell() {
+  lcd.fillScreen(COLOR_TERM_BG);
+  lcd.drawRect(4, 4, 232, 232, COLOR_TERM_DARK);
+  lcd.drawRect(7, 7, 226, 226, COLOR_TERM_DIM);
+  lcd.setTextFont(1);
+  lcd.setTextSize(1);
+  lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
+  lcd.setCursor(16, 14); lcd.print("pedido.os / terminal");
+}
+
+static void drawTerminalPrompt(const char* command, bool cursorVisible) {
+  lcd.setTextFont(1);
+  lcd.setTextSize(1);
+  lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
+  lcd.setCursor(16, 34); lcd.print("lila@pedido:~$ ");
+  lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
+  lcd.print(command);
+  if (cursorVisible) {
+    lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
+    lcd.print(" >");
+  }
+}
+
+static void drawEsp32Asset(int32_t x, int32_t y) {
+  lcd.drawRect(x, y, 58, 70, COLOR_TERM_DIM);
+  lcd.drawRect(x + 4, y + 4, 50, 62, COLOR_TERM_DARK);
+  lcd.fillRect(x + 16, y + 10, 26, 20, COLOR_TERM_DARK);
+  lcd.drawRect(x + 16, y + 10, 26, 20, COLOR_TERM_TEXT);
+  lcd.setTextFont(1);
+  lcd.setTextSize(1);
+  lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
+  lcd.setCursor(x + 21, y + 16); lcd.print("ESP");
+  for (uint8_t i = 0; i < 9; i++) {
+    lcd.fillRect(x - 3, y + 8 + i * 6, 3, 2, COLOR_TERM_DIM);
+    lcd.fillRect(x + 58, y + 8 + i * 6, 3, 2, COLOR_TERM_DIM);
+  }
+  lcd.drawRect(x + 20, y + 42, 18, 10, COLOR_TERM_DIM);
+  lcd.drawLine(x + 24, y + 58, x + 34, y + 58, COLOR_TERM_TEXT);
+}
+
+static void drawTerminalNeofetch() {
+  drawEsp32Asset(18, 62);
+  lcd.setTextFont(1);
+  lcd.setTextSize(1);
+  lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
+  lcd.setCursor(88, 60); lcd.print("lila-gift");
+  lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
+  lcd.setCursor(88, 72); lcd.print("----------");
+  lcd.setCursor(88, 88); lcd.print("MCU: ESP32");
+  lcd.setCursor(88, 100); lcd.print("DISPLAY: ST7789");
+  lcd.setCursor(88, 112); lcd.print("RES: 240x240");
+  lcd.setCursor(88, 124); lcd.print("AUDIO: MAX98357A");
+  lcd.setCursor(88, 136); lcd.print("FS: microSD");
+  lcd.setCursor(88, 148); lcd.print("UI: LovyanGFX");
+  lcd.setCursor(88, 160); lcd.print("BTN: NAV + OK");
+}
+
+static void drawTerminalStats() {
+  lcd.setTextFont(1);
+  lcd.setTextSize(1);
+  lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
+  lcd.setCursor(18, 62); lcd.print("STATS");
+  lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
+  lcd.setCursor(18, 82); lcd.print("linhas de codigo: ...");
+  lcd.setCursor(18, 98); lcd.print("horas de trabalho: ...");
+  lcd.setCursor(18, 114); lcd.print("testes de hardware: ...");
+  lcd.setCursor(18, 130); lcd.print("musicas escolhidas: ...");
+  lcd.setCursor(18, 146); lcd.print("mensagens escritas: ...");
+  lcd.setCursor(18, 162); lcd.print("carinho investido: muito");
+}
+
+void DisplayDevice::showTerminal(uint8_t commandIndex, bool executed, bool cursorVisible, uint8_t themeId) {
+  (void)themeId;
+  const char* command = commandIndex == 0 ? "NEOFETCH" : commandIndex == 1 ? "STATS" : "EXIT";
+  drawTerminalShell();
+  drawTerminalPrompt(command, !executed && cursorVisible);
+
+  if (executed) {
+    if (commandIndex == 0) drawTerminalNeofetch();
+    else                  drawTerminalStats();
+    lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
+    lcd.setCursor(18, 208); lcd.print("c limpa  n troca");
+    return;
+  }
+
+  lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
+  lcd.setCursor(18, 82);  lcd.print("n alterna comando");
+  lcd.setCursor(18, 98);  lcd.print("c executa");
+  lcd.setCursor(18, 114); lcd.print("EXIT volta ao menu");
 }
 
 void DisplayDevice::showPlaceholderApp(const char* title, const char* body, uint8_t themeId) {

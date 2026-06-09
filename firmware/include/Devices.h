@@ -35,6 +35,7 @@ public:
   void showLauncher(uint8_t selectedApp, uint8_t themeId, const char* nowPlaying);
   void showSettings(uint8_t selectedRow, uint8_t volumeLevel, uint8_t themeId);
   void showMusicPlayer(const char* heading, const char* trackName, uint8_t selectedControl, bool paused, uint8_t themeId);
+  void showTerminal(uint8_t commandIndex, bool executed, bool cursorVisible, uint8_t themeId);
   void showPlaceholderApp(const char* title, const char* body, uint8_t themeId);
   void drawImageArea(const char* imagePath);
   void drawGifLine(int16_t x, int16_t y, int16_t width, const uint16_t* pixels);
