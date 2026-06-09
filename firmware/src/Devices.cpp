@@ -762,15 +762,8 @@ void DisplayDevice::showTerminal(uint8_t commandIndex, bool executed, bool curso
   if (executed) {
     if (commandIndex == 0) drawTerminalNeofetch();
     else                  drawTerminalStats();
-    lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
-    lcd.setCursor(18, 208); lcd.print("c limpa  n troca");
     return;
   }
-
-  lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
-  lcd.setCursor(18, 82);  lcd.print("n alterna comando");
-  lcd.setCursor(18, 98);  lcd.print("c executa");
-  lcd.setCursor(18, 114); lcd.print("EXIT volta ao menu");
 }
 
 void DisplayDevice::showPlaceholderApp(const char* title, const char* body, uint8_t themeId) {
