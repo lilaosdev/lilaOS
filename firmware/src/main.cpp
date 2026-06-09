@@ -103,7 +103,7 @@ uint8_t themeByte() { return static_cast<uint8_t>(currentTheme); }
 void applyVolume() { audio.setGain(gainForVolume(volumeLevel)); }
 
 void playCurrentTrack() {
-  if (musicPaused || volumeLevel == 0) { audio.stop(); return; }
+  if (musicPaused) { audio.stop(); return; }
   uint8_t count = 0;
   const MusicTrack* playlist = currentPlaylist(&count);
   for (uint8_t attempts = 0; attempts < count; attempts++) {
@@ -143,7 +143,7 @@ void togglePause() {
 }
 
 void updateGlobalMusic() {
-  if (musicPaused || volumeLevel == 0 || audio.isPlaying()) return;
+  if (musicPaused || audio.isPlaying()) return;
   uint32_t now = millis();
   if (now - lastMusicRetryAt < 800) return;
   lastMusicRetryAt = now;
@@ -346,7 +346,6 @@ void startGif(const char* path) {
   }
   gifActive      = true;
   lastGifFrameAt = millis();
-  Serial.print("[gif] started "); Serial.println(path);
 }
 
 // GIF avanca frame apenas se o intervalo minimo passou — evita SPI contínuo.
@@ -360,10 +359,13 @@ void updateGif() {
 
 void drawDialogAsset() {
   DialogStep& step = currentDialog();
+  audio.update();
   if (!step.imagePath || !step.imagePath[0]) { stopGif(); display.drawImageArea(nullptr); return; }
   if (step.isGif) { startGif(step.imagePath); return; }
   stopGif();
+  audio.update();
   display.drawImageArea(step.imagePath);
+  audio.update();
 }
 
 void lockDevice(const String& reason) {
@@ -375,11 +377,13 @@ void lockDevice(const String& reason) {
 
 void renderDialogFull() {
   DialogStep& step = currentDialog();
+  audio.update();
   display.showDialog(
     step.speaker, step.text, visibleChars,
     step.hasQuestion, step.firstOption, step.secondOption,
     selectedOption, isTextComplete(), firstFrame
   );
+  audio.update();
   firstFrame = false;
 }
 
@@ -399,9 +403,15 @@ void enterDialog(uint8_t index) {
   firstFrame         = true;
   waitingToAdvance   = false;
 
+  if (index == 0) {
+    musicPaused = false;
+    audio.stop();
+    playCurrentTrack();
+  }
   if (currentDialog().audioPath[0] != '\0') audio.play(currentDialog().audioPath);
 
   renderDialogFull();
+  audio.update();
   drawDialogAsset();
 }
 
@@ -415,14 +425,22 @@ void showFinalAnswer(const char* title, const char* body) {
 
 void handleDialogConfirm() {
   if (finalScreen) return;
-  if (!isTextComplete()) {
-    visibleChars = textLength(currentDialog().text);
-    renderDialogFull();
-    return;
-  }
+  if (!isTextComplete()) return;
   if (currentDialog().hasQuestion) {
     if (selectedOption == 0) showFinalAnswer("RESPOSTA", "Final SIM selecionado. :)");
     else                     showFinalAnswer("RESPOSTA", "Final NAO selecionado.");
+    return;
+  }
+}
+
+void devSkipDialog() {
+  if (currentScreen != SystemScreen::Dialog || finalScreen) return;
+  if (!isTextComplete()) {
+    visibleChars = textLength(currentDialog().text);
+    renderDialogFull();
+    if (currentDialog().hasQuestion) {
+      display.redrawOptions(currentDialog().firstOption, currentDialog().secondOption, selectedOption);
+    }
     return;
   }
   if (currentDialogIndex + 1 < DIALOG_COUNT) enterDialog(currentDialogIndex + 1);
@@ -481,11 +499,8 @@ void handleHomeConfirm() {
 
 void handleSettingsConfirm() {
   if (settingsSelection == 0) {
-    bool wasMuted = volumeLevel == 0;
     volumeLevel = (volumeLevel + 1) % 6;
     applyVolume();
-    if (volumeLevel == 0) audio.stop();
-    else if (wasMuted && !musicPaused) playCurrentTrack();
     renderSettings();
   } else if (settingsSelection == 1) {
     currentTheme = currentTheme == ThemeId::Lila ? ThemeId::Kalsing : ThemeId::Lila;
@@ -603,6 +618,9 @@ void loop() {
     } else if (devInput == 'u' || devInput == 'U') {
       Serial.read();
       renderStart();
+    } else if (devInput == 'l' || devInput == 'L') {
+      Serial.read();
+      devSkipDialog();
     }
   }
 

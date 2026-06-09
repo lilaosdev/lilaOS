@@ -39,6 +39,7 @@ constexpr int32_t IMAGE_AREA_Y = 156;
 constexpr int32_t IMAGE_AREA_H = 84;
 constexpr int32_t IMAGE_SIZE   = 84;
 constexpr int32_t IMAGE_X      = (DISPLAY_WIDTH - IMAGE_SIZE) / 2;
+constexpr bool SERIAL_DIALOG_PREVIEW = false;
 
 // Estado do cursor — persistente entre chamadas de drawNextChar.
 // Resetado quando showDialog e chamado com firstFrame=true.
@@ -331,7 +332,7 @@ void DisplayDevice::showDialog(
 
   // preview serial apenas no firstFrame — evita Serial.print a cada char do typewriter
   // que bloqueava a CPU e causava underrun no decoder MP3
-  if (firstFrame) {
+  if (firstFrame && SERIAL_DIALOG_PREVIEW) {
     drawSerialDialogPreview(
       speaker, text, visibleChars,
       hasQuestion, firstOption, secondOption,
@@ -433,7 +434,6 @@ void DisplayDevice::drawImageArea(const char* imagePath) {
     Serial.print("[display] image not found: "); Serial.println(imagePath);
     return;
   }
-  Serial.print("[display] draw BMP "); Serial.println(imagePath);
   lcd.drawBmpFile(*fs, imagePath, IMAGE_X, IMAGE_AREA_Y);
 }
 
