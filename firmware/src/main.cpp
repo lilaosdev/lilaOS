@@ -16,6 +16,7 @@ enum class SystemScreen {
   Home,
   Music,
   Settings,
+  Terminal,
   Placeholder,
   Start,
   Dialog,
@@ -54,10 +55,14 @@ ThemeId      currentTheme    = ThemeId::Lila;
 uint8_t      homeSelection   = 0;
 uint8_t      settingsSelection = 0;
 uint8_t      musicSelection  = 1;
+uint8_t      terminalCommand = 0;
 uint8_t      volumeLevel     = 3;
 uint8_t      musicTrackIndex = 0;
 bool         musicPaused     = false;
 uint32_t     lastMusicRetryAt = 0;
+bool         terminalExecuted = false;
+bool         terminalCursorVisible = true;
+uint32_t     lastTerminalBlinkAt = 0;
 
 // --- GIF timing ---
 // GIF so avanca frame quando o intervalo minimo passou,
@@ -161,6 +166,12 @@ void renderSettings() {
   currentScreen = SystemScreen::Settings;
   stopGif();
   display.showSettings(settingsSelection, volumeLevel, themeByte());
+}
+
+void renderTerminal() {
+  currentScreen = SystemScreen::Terminal;
+  stopGif();
+  display.showTerminal(terminalCommand, terminalExecuted, terminalCursorVisible, themeByte());
 }
 
 void renderMusic() {
@@ -371,7 +382,10 @@ void renderDialogFull() {
 }
 
 void renderNextChar() {
-  display.drawNextChar(currentDialog().text, visibleChars, isTextComplete());
+  display.drawNextChar(currentDialog().text, visibleChars, isTextComplete(), currentDialog().hasQuestion);
+  if (isTextComplete() && currentDialog().hasQuestion) {
+    display.redrawOptions(currentDialog().firstOption, currentDialog().secondOption, selectedOption);
+  }
 }
 
 void enterDialog(uint8_t index) {
@@ -440,12 +454,27 @@ void updateDialogAutoAdvance() {
   if (currentDialogIndex + 1 < DIALOG_COUNT) enterDialog(currentDialogIndex + 1);
 }
 
+void updateTerminalCursor() {
+  if (currentScreen != SystemScreen::Terminal || terminalExecuted) return;
+  uint32_t now = millis();
+  if (now - lastTerminalBlinkAt < 500) return;
+  lastTerminalBlinkAt = now;
+  terminalCursorVisible = !terminalCursorVisible;
+  renderTerminal();
+}
+
 // --- Handlers de telas do sistema ---
 
 void handleHomeConfirm() {
   if (homeSelection == 0)      renderMusic();
   else if (homeSelection == 1) renderSettings();
-  else                         renderPlaceholder();
+  else {
+    terminalCommand = 0;
+    terminalExecuted = false;
+    terminalCursorVisible = true;
+    lastTerminalBlinkAt = millis();
+    renderTerminal();
+  }
 }
 
 void handleSettingsConfirm() {
@@ -473,12 +502,24 @@ void handleMusicConfirm() {
   if (currentScreen == SystemScreen::Music) renderMusic();
 }
 
+void handleTerminalConfirm() {
+  if (!terminalExecuted && terminalCommand == 2) {
+    renderHome();
+    return;
+  }
+  terminalExecuted = !terminalExecuted;
+  terminalCursorVisible = true;
+  lastTerminalBlinkAt = millis();
+  renderTerminal();
+}
+
 void handleConfirm() {
   switch (currentScreen) {
     case SystemScreen::Start:       enterDialog(0);          break;
     case SystemScreen::Home:        handleHomeConfirm();     break;
     case SystemScreen::Settings:    handleSettingsConfirm(); break;
     case SystemScreen::Music:       handleMusicConfirm();    break;
+    case SystemScreen::Terminal:    handleTerminalConfirm(); break;
     case SystemScreen::Placeholder: renderHome();            break;
     case SystemScreen::Dialog:      handleDialogConfirm();   break;
     case SystemScreen::Final:       renderHome();            break;
@@ -498,6 +539,12 @@ void handleNavigate() {
     case SystemScreen::Music:
       musicSelection = (musicSelection + 1) % 4;
       renderMusic();
+      break;
+    case SystemScreen::Terminal:
+      terminalCommand = (terminalCommand + 1) % (terminalExecuted ? 2 : 3);
+      terminalCursorVisible = true;
+      lastTerminalBlinkAt = millis();
+      renderTerminal();
       break;
     case SystemScreen::Dialog:
       handleDialogNavigate();
@@ -576,10 +623,13 @@ void loop() {
   // 5. gif — so avanca frame se o intervalo minimo passou (GIF_MIN_FRAME_MS)
   if (currentScreen == SystemScreen::Dialog) updateGif();
 
-  // 6. musica ambiente — verifica se precisa reiniciar track
+  // 6. cursor do terminal fake
+  updateTerminalCursor();
+
+  // 7. musica ambiente — verifica se precisa reiniciar track
   updateGlobalMusic();
 
-  // 7. audio de novo no final — garante que o buffer nao seca entre frames
+  // 8. audio de novo no final — garante que o buffer nao seca entre frames
   audio.update();
 
   // sem delay fixo — loop roda na velocidade maxima do ESP32
