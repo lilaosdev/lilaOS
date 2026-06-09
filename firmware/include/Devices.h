@@ -21,7 +21,7 @@ public:
   );
   // Desenha apenas o proximo caractere — sem fullredraw, sem fillRect na area de texto.
   // Chame no lugar de showDialog durante o typewriter normal.
-  void drawNextChar(const char* text, uint16_t visibleChars, bool textComplete);
+  void drawNextChar(const char* text, uint16_t visibleChars, bool textComplete, bool hasQuestion);
   // Redesenha so as opcoes de escolha — sem tocar texto nem gif.
   void redrawOptions(const char* firstOption, const char* secondOption, uint8_t selectedOption);
   void showEnding(

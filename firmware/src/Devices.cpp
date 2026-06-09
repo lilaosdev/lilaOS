@@ -29,7 +29,7 @@ constexpr int32_t TEXT_H = 136;
 constexpr int32_t LINE_H = 20;
 constexpr int32_t CHAR_W = 12;
 
-constexpr int32_t OPT_Y  = 148;
+constexpr int32_t OPT_Y  = 126;
 constexpr int32_t OPT_H  = 22;
 constexpr int32_t OPT1_X = 18;
 constexpr int32_t OPT2_X = 126;
@@ -345,7 +345,8 @@ void DisplayDevice::showDialog(
 void DisplayDevice::drawNextChar(
   const char* text,
   uint16_t    visibleChars,
-  bool        textComplete
+  bool        textComplete,
+  bool        hasQuestion
 ) {
   if (visibleChars == 0 || text == nullptr) return;
 
@@ -370,7 +371,7 @@ void DisplayDevice::drawNextChar(
   }
 
   // cursor na nova posicao ou indicador de completo
-  if (textComplete) {
+  if (textComplete && !hasQuestion) {
     lcd.setTextFont(1);
     lcd.setTextSize(1);
     lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);

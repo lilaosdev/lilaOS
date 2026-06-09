@@ -382,7 +382,10 @@ void renderDialogFull() {
 }
 
 void renderNextChar() {
-  display.drawNextChar(currentDialog().text, visibleChars, isTextComplete());
+  display.drawNextChar(currentDialog().text, visibleChars, isTextComplete(), currentDialog().hasQuestion);
+  if (isTextComplete() && currentDialog().hasQuestion) {
+    display.redrawOptions(currentDialog().firstOption, currentDialog().secondOption, selectedOption);
+  }
 }
 
 void enterDialog(uint8_t index) {
