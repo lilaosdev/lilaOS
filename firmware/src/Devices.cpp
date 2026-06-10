@@ -7,6 +7,7 @@
 #include <AudioGeneratorMP3.h>
 #include <AudioOutputI2S.h>
 #include <LovyanGFX.hpp>
+#include <cstring>
 
 namespace {
 constexpr uint8_t NAVIGATE_BUTTON_PIN = INPUT_PIN_NAVIGATE;
@@ -214,12 +215,21 @@ void redrawTextArea(
 void redrawOptions(
   const char* firstOption,
   const char* secondOption,
-  uint8_t     selectedOption
+  uint8_t     selectedOption,
+  bool        secondRed
 ) {
-  lcd.fillRect(OPT1_X, OPT_Y, OPT_W + (OPT2_X - OPT1_X - OPT_W) + OPT_W, OPT_H, COLOR_BG);
+  lcd.fillRect(
+    OPT1_X,
+    OPT_Y,
+    OPT_W + (OPT2_X - OPT1_X - OPT_W) + OPT_W,
+    OPT_H,
+    COLOR_BG
+  );
+
   lcd.setTextFont(1);
   lcd.setTextSize(2);
 
+  // Botão SIM
   if (selectedOption == 0) {
     lcd.fillRect(OPT1_X, OPT_Y, OPT_W, OPT_H, COLOR_BLACK);
     lcd.setTextColor(COLOR_BG, COLOR_BLACK);
@@ -228,19 +238,31 @@ void redrawOptions(
     lcd.drawRect(OPT1_X, OPT_Y, OPT_W, OPT_H, COLOR_BLACK);
     lcd.setTextColor(COLOR_BLACK, COLOR_BG);
   }
+
   lcd.setCursor(OPT1_X + 6, OPT_Y + 4);
   lcd.print(firstOption);
 
+  // Botão NÃO
+  uint16_t noColor = secondRed ? COLOR_RED : COLOR_BLACK;
+
   if (selectedOption == 1) {
-    lcd.fillRect(OPT2_X, OPT_Y, OPT_W, OPT_H, COLOR_BLACK);
-    lcd.setTextColor(COLOR_BG, COLOR_BLACK);
+    lcd.fillRect(OPT2_X, OPT_Y, OPT_W, OPT_H, noColor);
+    lcd.setTextColor(COLOR_BG, noColor);
   } else {
     lcd.fillRect(OPT2_X, OPT_Y, OPT_W, OPT_H, COLOR_BG);
-    lcd.drawRect(OPT2_X, OPT_Y, OPT_W, OPT_H, COLOR_BLACK);
-    lcd.setTextColor(COLOR_BLACK, COLOR_BG);
+    lcd.drawRect(OPT2_X, OPT_Y, OPT_W, OPT_H, noColor);
+    lcd.setTextColor(noColor, COLOR_BG);
   }
-  lcd.setCursor(OPT2_X + 6, OPT_Y + 4);
-  lcd.print(secondOption);
+
+if (strlen(secondOption) > 6)
+  lcd.setTextSize(1);
+else
+  lcd.setTextSize(2);
+
+lcd.setCursor(OPT2_X + 6, OPT_Y + 4);
+lcd.print(secondOption);
+
+lcd.setTextSize(2);
 }
 
 void drawSerialDialogPreview(
@@ -386,9 +408,15 @@ void DisplayDevice::drawNextChar(
 void DisplayDevice::redrawOptions(
   const char* firstOption,
   const char* secondOption,
-  uint8_t     selectedOption
+  uint8_t     selectedOption,
+  bool        secondRed
 ) {
-  ::redrawOptions(firstOption, secondOption, selectedOption);
+  ::redrawOptions(
+    firstOption,
+    secondOption,
+    selectedOption,
+    secondRed
+  );
 }
 
 void DisplayDevice::showEnding(

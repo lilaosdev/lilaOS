@@ -397,6 +397,15 @@ constexpr uint16_t TYPEWRITER_INTERVAL_MS = 50;
 
 uint8_t  currentDialogIndex = 0;
 uint8_t  selectedOption     = 0;
+uint8_t  noAttempts         = 0;
+bool     noBlockedFlash     = false;
+uint32_t noBlockedFlashUntil = 0;
+const char* currentNoText = "Nao";
+constexpr const char* NO_BLOCK_MESSAGES[] = {
+  "tem certeza?",
+  "mesmo?",
+  "ok..."
+};
 uint16_t visibleChars       = 0;
 uint32_t lastTypewriterTick = 0;
 bool     finalScreen        = false;
@@ -491,7 +500,12 @@ void renderDialogFull() {
 void renderNextChar() {
   display.drawNextChar(currentDialog().text, visibleChars, isTextComplete(), currentDialog().hasQuestion);
   if (isTextComplete() && currentDialog().hasQuestion) {
-    display.redrawOptions(currentDialog().firstOption, currentDialog().secondOption, selectedOption);
+    display.redrawOptions(
+    currentDialog().firstOption,
+    currentNoText,
+    selectedOption,
+    false
+);
   }
 }
 
@@ -499,6 +513,9 @@ void enterDialog(uint8_t index) {
   currentScreen      = SystemScreen::Dialog;
   currentDialogIndex = index;
   selectedOption     = 0;
+  noAttempts        = 0;
+  noBlockedFlash    = false;
+  currentNoText     = "Nao";
   visibleChars       = 0;
   lastTypewriterTick = millis();
   firstFrame         = true;
@@ -545,8 +562,27 @@ void handleDialogConfirm() {
   if (finalScreen) return;
   if (!isTextComplete()) return;
   if (currentDialog().hasQuestion) {
-    if (selectedOption == 0) showAnswerFinal(true);
-    else                     showAnswerFinal(false);
+    if (selectedOption == 0) {
+      showAnswerFinal(true);
+      return;
+    }
+
+    if (noAttempts < 2) {
+      currentNoText = NO_BLOCK_MESSAGES[noAttempts];
+      noAttempts++;
+      noBlockedFlash = true;
+      noBlockedFlashUntil = millis() + 1200;
+
+display.redrawOptions(
+  currentDialog().firstOption,
+  currentNoText,
+  selectedOption,
+  true
+);
+      return;
+    }
+
+    showAnswerFinal(false);
     return;
   }
 }
@@ -557,7 +593,12 @@ void devSkipDialog() {
     visibleChars = textLength(currentDialog().text);
     renderDialogFull();
     if (currentDialog().hasQuestion) {
-      display.redrawOptions(currentDialog().firstOption, currentDialog().secondOption, selectedOption);
+      display.redrawOptions(
+    currentDialog().firstOption,
+    currentNoText,
+    selectedOption,
+    false
+);
     }
     return;
   }
@@ -567,7 +608,12 @@ void devSkipDialog() {
 void handleDialogNavigate() {
   if (!finalScreen && currentDialog().hasQuestion && isTextComplete()) {
     selectedOption = selectedOption == 0 ? 1 : 0;
-    display.redrawOptions(currentDialog().firstOption, currentDialog().secondOption, selectedOption);
+    display.redrawOptions(
+    currentDialog().firstOption,
+    currentNoText,
+    selectedOption,
+    false
+);
   }
 }
 
@@ -590,6 +636,20 @@ void updateDialogAutoAdvance() {
   if (millis() < advanceReadyAt) return;
   waitingToAdvance = false;
   if (currentDialogIndex + 1 < DIALOG_COUNT) enterDialog(currentDialogIndex + 1);
+}
+
+void updateNoButtonFlash() {
+  if (!noBlockedFlash) return;
+  if (millis() < noBlockedFlashUntil) return;
+
+  noBlockedFlash = false;
+
+display.redrawOptions(
+  currentDialog().firstOption,
+  currentNoText,
+  selectedOption,
+  false
+);
 }
 
 void updateTerminalCursor() {
@@ -767,6 +827,7 @@ void loop() {
 
   // 4. avanço automático entre dialogs normais
   updateDialogAutoAdvance();
+  updateNoButtonFlash();
   updateFinalAction();
 
   // 5. gif — so avanca frame se o intervalo minimo passou (GIF_MIN_FRAME_MS)
