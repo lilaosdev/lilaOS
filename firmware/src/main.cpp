@@ -28,10 +28,19 @@ enum class ThemeId : uint8_t {
   Kalsing = 1,
 };
 
+enum class MusicContext : uint8_t {
+  Start,
+  Dialog,
+  Playlist,
+};
+
 struct MusicTrack {
   const char* title;
   const char* path;
 };
+
+constexpr const char* START_MUSIC_PATH  = "/audio/minhanamorada20s.mp3";
+constexpr const char* DIALOG_MUSIC_PATH = "/audio/1_Minha_Namorada_(Instrumental).mp3";
 
 constexpr MusicTrack LILA_PLAYLIST[] = {
   { "Minha Namorada20S", "/audio/papodeundaia.mp3" },
@@ -58,6 +67,7 @@ uint8_t      musicSelection  = 1;
 uint8_t      terminalCommand = 0;
 uint8_t      volumeLevel     = 3;
 uint8_t      musicTrackIndex = 0;
+MusicContext musicContext    = MusicContext::Playlist;
 bool         musicPaused     = false;
 uint32_t     lastMusicRetryAt = 0;
 bool         terminalExecuted = false;
@@ -102,8 +112,26 @@ uint8_t themeByte() { return static_cast<uint8_t>(currentTheme); }
 
 void applyVolume() { audio.setGain(gainForVolume(volumeLevel)); }
 
+bool playFixedMusic(const char* path, const char* label) {
+  if (musicPaused) { audio.stop(); return false; }
+  if (!storage.exists(path)) {
+    Serial.print("[music] missing ");
+    Serial.print(label);
+    Serial.print(": ");
+    Serial.println(path);
+    return false;
+  }
+  Serial.print("[music] play ");
+  Serial.print(label);
+  Serial.print(": ");
+  Serial.println(path);
+  audio.play(path);
+  return true;
+}
+
 void playCurrentTrack() {
   if (musicPaused) { audio.stop(); return; }
+  musicContext = MusicContext::Playlist;
   uint8_t count = 0;
   const MusicTrack* playlist = currentPlaylist(&count);
   for (uint8_t attempts = 0; attempts < count; attempts++) {
@@ -114,7 +142,20 @@ void playCurrentTrack() {
   Serial.println("[music] no tracks found");
 }
 
+void playStartMusic() {
+  musicContext = MusicContext::Start;
+  playFixedMusic(START_MUSIC_PATH, "start");
+}
+
+void restartDialogMusic() {
+  musicContext = MusicContext::Dialog;
+  musicPaused = false;
+  audio.stop();
+  playFixedMusic(DIALOG_MUSIC_PATH, "dialog");
+}
+
 void restartThemePlaylist() {
+  musicContext = MusicContext::Playlist;
   musicTrackIndex = 0;
   audio.stop();
   playCurrentTrack();
@@ -147,13 +188,20 @@ void updateGlobalMusic() {
   uint32_t now = millis();
   if (now - lastMusicRetryAt < 800) return;
   lastMusicRetryAt = now;
-  playCurrentTrack();
+
+  if (musicContext == MusicContext::Start) {
+    playStartMusic();
+  } else if (musicContext == MusicContext::Playlist) {
+    playCurrentTrack();
+  }
 }
 
 void renderStart() {
   currentScreen = SystemScreen::Start;
   stopGif();
   display.showStart();
+  audio.stop();
+  playStartMusic();
 }
 
 void renderHome() {
@@ -404,9 +452,7 @@ void enterDialog(uint8_t index) {
   waitingToAdvance   = false;
 
   if (index == 0) {
-    musicPaused = false;
-    audio.stop();
-    playCurrentTrack();
+    restartDialogMusic();
   }
   if (currentDialog().audioPath[0] != '\0') audio.play(currentDialog().audioPath);
 
@@ -602,7 +648,6 @@ void setup() {
 
   delay(650);
   renderStart();
-  playCurrentTrack();
 }
 
 void loop() {
