@@ -3,14 +3,21 @@
 #include "Devices.h"
 #include "StorageDevice.h"
 #include <AnimatedGIF.h>
+#include <Preferences.h>
 
 namespace {
 DisplayDevice display;
 AudioDevice audio;
 ButtonInput buttons;
 AnimatedGIF gif;
+Preferences prefs;
 File gifFile;
 bool gifActive = false;
+int16_t gifDrawX = 78;
+int16_t gifDrawY = 156;
+int16_t gifDrawW = 84;
+int16_t gifDrawH = 84;
+RTC_DATA_ATTR bool bootToHomeAfterRestart = false;
 
 enum class SystemScreen {
   Home,
@@ -34,13 +41,30 @@ enum class MusicContext : uint8_t {
   Playlist,
 };
 
+enum class FinalAction : uint8_t {
+  None,
+  GoHome,
+  RestartToHome,
+};
+
 struct MusicTrack {
   const char* title;
   const char* path;
 };
 
 constexpr const char* START_MUSIC_PATH  = "/audio/minhanamorada20s.mp3";
-constexpr const char* DIALOG_MUSIC_PATH = "/audio/1_Minha_Namorada_(Instrumental).mp3";
+constexpr const char* DIALOG_MUSIC_PATH = "/audio/papodeundaia.mp3";
+
+constexpr const char* FINAL_YES_TEXT = "eu sabia :)";
+constexpr const char* FINAL_NO_TEXT  = "...  :(";
+constexpr const char* FINAL_YES_GIF_PATH = "/img/gatinho19gif.gif";
+constexpr const char* FINAL_NO_GIF_PATH  = "/img/rezefinal.gif";
+constexpr uint32_t FINAL_YES_MS = 6000;
+constexpr uint32_t FINAL_NO_MS  = 3600;
+
+constexpr bool DIALOG_RUN_ONCE = true;
+constexpr const char* PREF_NAMESPACE = "pedido";
+constexpr const char* PREF_DIALOG_DONE = "dialog_done";
 
 constexpr MusicTrack LILA_PLAYLIST[] = {
   { "Minha Namorada20S", "/audio/papodeundaia.mp3" },
@@ -77,10 +101,25 @@ uint32_t     lastTerminalBlinkAt = 0;
 // --- GIF timing ---
 // GIF so avanca frame quando o intervalo minimo passou,
 // evitando que o SPI seja tomado a cada iteracao do loop.
-constexpr uint32_t GIF_MIN_FRAME_MS = 40; // ~25fps maximo
+constexpr uint32_t GIF_MIN_FRAME_MS = 327; // ~25fps maximo
 uint32_t lastGifFrameAt = 0;
 
 void stopGif();
+
+bool isDialogDone() {
+  return DIALOG_RUN_ONCE && prefs.getBool(PREF_DIALOG_DONE, false);
+}
+
+void markDialogDone() {
+  if (!DIALOG_RUN_ONCE) return;
+  prefs.putBool(PREF_DIALOG_DONE, true);
+  Serial.println("[dialog] marked as done");
+}
+
+void resetDialogDone() {
+  prefs.putBool(PREF_DIALOG_DONE, false);
+  Serial.println("[dialog] run-once flag cleared");
+}
 
 const MusicTrack* currentPlaylist(uint8_t* count = nullptr) {
   if (currentTheme == ThemeId::Lila) {
@@ -281,10 +320,10 @@ void gifDraw(GIFDRAW* draw) {
   uint8_t* source = draw->pPixels;
   if (!source) return;
 
-  constexpr int16_t IMAGE_W = 84;
-  constexpr int16_t IMAGE_H = 84;
-  constexpr int16_t imageX  = 78;
-  constexpr int16_t imageY  = 156;
+  const int16_t IMAGE_W = gifDrawW;
+  const int16_t IMAGE_H = gifDrawH;
+  const int16_t imageX  = gifDrawX;
+  const int16_t imageY  = gifDrawY;
 
   int16_t srcOffset = 0;
   int16_t frameX    = (int16_t)draw->iX;
@@ -296,7 +335,7 @@ void gifDraw(GIFDRAW* draw) {
   if (frameY < 0 || frameY >= IMAGE_H || frameW <= 0) return;
   if (frameW > IMAGE_W) frameW = IMAGE_W;
 
-  uint16_t line[IMAGE_W];
+  uint16_t line[240];
   int16_t outputX = imageX + frameX;
   int16_t outputY = imageY + frameY;
 
@@ -343,7 +382,7 @@ DialogStep dialog[] = {
   { "EU",       "e essa foi a forma que encontrei. espero que goste :)",                                 false, "", "", "", "/img/gato4bmp.bmp",    false },
   { "EU",       "toda a ideia, estetica, eletronica e codigo dele foram montadas por mim",              false, "", "", "", "/img/gatinho6bmp.bmp", false },
   { "EU",       "passei algumas madrugadas resolvendo bug sou literalmente ele",              false, "", "", "", "/img/gatinho10bmp.bmp", false },
-  { "EU",       "foi bem complicado mas nenhum codigo ou eletronica se comparou com a", false, "", "", "", "/img/gatinho14bmp.bmp", false },
+  { "EU",       "foi bem complicado mas nenhum codigo ou eletronica se comparou com a", false, "", "", "", "", false },
   { "EU",       "dificuldade de encontrar as palavras que queria colocar aqui", false, "", "", "", "/img/gatinho15bmp.bmp", false },
   { "EU",       "e o kalsing desde de 2024 queria muito te contar uma coisa", false, "", "", "", "/img/gatinho11bmp.bmp", false },
   { "EU",       "mas ele deixou pro kalsing de 2026 falar..", false, "", "", "", "/img/gatinho9bmp.bmp", false },
@@ -362,6 +401,8 @@ uint16_t visibleChars       = 0;
 uint32_t lastTypewriterTick = 0;
 bool     finalScreen        = false;
 bool     firstFrame         = true;
+FinalAction pendingFinalAction = FinalAction::None;
+uint32_t    finalActionAt      = 0;
 
 constexpr uint32_t DIALOG_AUTO_ADVANCE_MS = 1000;
 bool     waitingToAdvance = false;
@@ -384,9 +425,13 @@ void stopGif() {
   if (gifFile)   gifFile.close();
 }
 
-void startGif(const char* path) {
+void startGif(const char* path, int16_t x, int16_t y, int16_t w, int16_t h, bool clearDialogImageArea) {
   stopGif();
-  display.drawImageArea(nullptr);
+  if (clearDialogImageArea) display.drawImageArea(nullptr);
+  gifDrawX = x;
+  gifDrawY = y;
+  gifDrawW = w;
+  gifDrawH = h;
   if (!path || !path[0]) return;
   if (!storage.exists(path)) { Serial.print("[gif] not found: "); Serial.println(path); return; }
   if (!gif.open(path, gifOpenFile, gifCloseFile, gifReadFile, gifSeekFile, gifDraw)) {
@@ -394,6 +439,14 @@ void startGif(const char* path) {
   }
   gifActive      = true;
   lastGifFrameAt = millis();
+}
+
+void startDialogGif(const char* path) {
+  startGif(path, 78, 156, 84, 84, true);
+}
+
+void startFinalGif(const char* path) {
+  startGif(path, 8, 44, 224, 188, false);
 }
 
 // GIF avanca frame apenas se o intervalo minimo passou — evita SPI contínuo.
@@ -409,7 +462,7 @@ void drawDialogAsset() {
   DialogStep& step = currentDialog();
   audio.update();
   if (!step.imagePath || !step.imagePath[0]) { stopGif(); display.drawImageArea(nullptr); return; }
-  if (step.isGif) { startGif(step.imagePath); return; }
+  if (step.isGif) { startDialogGif(step.imagePath); return; }
   stopGif();
   audio.update();
   display.drawImageArea(step.imagePath);
@@ -461,20 +514,39 @@ void enterDialog(uint8_t index) {
   drawDialogAsset();
 }
 
-void showFinalAnswer(const char* title, const char* body) {
+void showAnswerFinal(bool accepted) {
   currentScreen = SystemScreen::Final;
   finalScreen   = true;
+  markDialogDone();
+  waitingToAdvance = false;
+  display.showFinalScene(accepted ? FINAL_YES_TEXT : FINAL_NO_TEXT);
+  startFinalGif(accepted ? FINAL_YES_GIF_PATH : FINAL_NO_GIF_PATH);
+  pendingFinalAction = accepted ? FinalAction::GoHome : FinalAction::RestartToHome;
+  finalActionAt = millis() + (accepted ? FINAL_YES_MS : FINAL_NO_MS);
+}
+
+void updateFinalAction() {
+  if (pendingFinalAction == FinalAction::None || currentScreen != SystemScreen::Final) return;
+  if (millis() < finalActionAt) return;
+
+  FinalAction action = pendingFinalAction;
+  pendingFinalAction = FinalAction::None;
   stopGif();
-  // nao para musica no final do dialogo — pode querer musica no final
-  display.showEnding(0, 1, title, body);
+
+  if (action == FinalAction::RestartToHome) {
+    bootToHomeAfterRestart = true;
+    ESP.restart();
+  } else {
+    renderHome();
+  }
 }
 
 void handleDialogConfirm() {
   if (finalScreen) return;
   if (!isTextComplete()) return;
   if (currentDialog().hasQuestion) {
-    if (selectedOption == 0) showFinalAnswer("RESPOSTA", "Final SIM selecionado. :)");
-    else                     showFinalAnswer("RESPOSTA", "Final NAO selecionado.");
+    if (selectedOption == 0) showAnswerFinal(true);
+    else                     showAnswerFinal(false);
     return;
   }
 }
@@ -636,6 +708,7 @@ void setup() {
   display.begin();
   gif.begin(GIF_PALETTE_RGB565_BE);
   audio.begin();
+  prefs.begin(PREF_NAMESPACE, false);
   buttons.begin();
   applyVolume();
 
@@ -644,6 +717,12 @@ void setup() {
 
   if (config.mode == RemoteMode::Locked) {
     lockDevice("bloqueado por configuracao remota");
+  }
+
+  if (bootToHomeAfterRestart || isDialogDone()) {
+    bootToHomeAfterRestart = false;
+    renderHome();
+    return;
   }
 
   delay(650);
@@ -666,6 +745,10 @@ void loop() {
     } else if (devInput == 'l' || devInput == 'L') {
       Serial.read();
       devSkipDialog();
+    } else if (devInput == 'r' || devInput == 'R') {
+      Serial.read();
+      resetDialogDone();
+      renderStart();
     }
   }
 
@@ -684,9 +767,10 @@ void loop() {
 
   // 4. avanço automático entre dialogs normais
   updateDialogAutoAdvance();
+  updateFinalAction();
 
   // 5. gif — so avanca frame se o intervalo minimo passou (GIF_MIN_FRAME_MS)
-  if (currentScreen == SystemScreen::Dialog) updateGif();
+  if (currentScreen == SystemScreen::Dialog || currentScreen == SystemScreen::Final) updateGif();
 
   // 6. cursor do terminal fake
   updateTerminalCursor();

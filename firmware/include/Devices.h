@@ -31,6 +31,7 @@ public:
     const char* body
   );
   void showLocked(const String& message);
+  void showFinalScene(const char* text);
   void showStart();
   void showLauncher(uint8_t selectedApp, uint8_t themeId, const char* nowPlaying);
   void showSettings(uint8_t selectedRow, uint8_t volumeLevel, uint8_t themeId);

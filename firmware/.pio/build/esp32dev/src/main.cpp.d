@@ -136,4 +136,5 @@
  include/AppConfig.h include/Devices.h include/Scene.h \
  include/StorageDevice.h \
  C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/libraries/FS/src/FS.h \
- .pio/libdeps/esp32dev/AnimatedGIF/src/AnimatedGIF.h
+ .pio/libdeps/esp32dev/AnimatedGIF/src/AnimatedGIF.h \
+ C:/Users/gabri/.platformio/packages/framework-arduinoespressif32/libraries/Preferences/src/Preferences.h

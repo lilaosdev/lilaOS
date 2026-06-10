@@ -417,6 +417,24 @@ void DisplayDevice::showEnding(
   lcd.setCursor(18, 220); lcd.print(pageIndex + 1); lcd.print("/"); lcd.print(pageCount);
 }
 
+
+void DisplayDevice::showFinalScene(const char* text) {
+  Serial.print("[final] ");
+  Serial.println(text);
+
+  lcd.fillScreen(COLOR_BG);
+  drawScreenBorder();
+
+  lcd.fillRect(10, 12, 220, 28, COLOR_BG);
+  lcd.drawRect(10, 12, 220, 28, COLOR_PINK_DARK);
+  lcd.setTextFont(1);
+  lcd.setTextSize(1);
+  lcd.setTextColor(COLOR_BLACK, COLOR_BG);
+  lcd.setCursor(18, 22);
+  lcd.print(text);
+
+  lcd.fillRect(8, 44, 224, 188, COLOR_BG);
+}
 void DisplayDevice::showLocked(const String& message) {
   Serial.print("[locked] "); Serial.println(message);
   lcd.fillScreen(COLOR_BLACK);
@@ -439,15 +457,14 @@ void DisplayDevice::drawImageArea(const char* imagePath) {
 
 void DisplayDevice::drawGifLine(int16_t x, int16_t y, int16_t width, const uint16_t* pixels) {
   if (pixels == nullptr || width <= 0) return;
-  if (y < IMAGE_AREA_Y || y >= IMAGE_AREA_Y + IMAGE_AREA_H) return;
-  if (x < IMAGE_X) {
-    int16_t clipped = IMAGE_X - x;
+  if (y < 0 || y >= DISPLAY_HEIGHT) return;
+  if (x < 0) {
+    int16_t clipped = -x;
     pixels += clipped;
     width  -= clipped;
-    x       = IMAGE_X;
+    x       = 0;
   }
-  int16_t maxRight = IMAGE_X + IMAGE_SIZE;
-  if (x + width > maxRight) width = maxRight - x;
+  if (x + width > DISPLAY_WIDTH) width = DISPLAY_WIDTH - x;
   if (width <= 0) return;
   lcd.pushImage(x, y, width, 1, pixels);
 }
