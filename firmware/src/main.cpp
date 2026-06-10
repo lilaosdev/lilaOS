@@ -246,6 +246,7 @@ void renderStart() {
 void renderHome() {
   currentScreen = SystemScreen::Home;
   stopGif();
+  restartThemePlaylist();
   display.showLauncher(homeSelection, themeByte(), currentTrack().title);
 }
 
@@ -451,10 +452,12 @@ void startGif(const char* path, int16_t x, int16_t y, int16_t w, int16_t h, bool
 }
 
 void startDialogGif(const char* path) {
+  audio.stop();
   startGif(path, 78, 156, 84, 84, true);
 }
 
 void startFinalGif(const char* path) {
+  audio.stop();
   startGif(path, 8, 44, 224, 188, false);
 }
 
