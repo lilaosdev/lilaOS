@@ -67,7 +67,7 @@ constexpr const char* PREF_NAMESPACE = "pedido";
 constexpr const char* PREF_DIALOG_DONE = "dialog_done";
 
 constexpr MusicTrack LILA_PLAYLIST[] = {
-  { "Minha Namorada20S", "/audio/papodeundaia.mp3" },
+  { "Minha Namorada_Dialog", "/audio/papodeundaia.mp3" },
   { "Minha Namorada",    "/audio/Minha_Namorada_Mixado.mp3" },
   { "Safeword",          "/audio/Safeword_Mixado.mp3" },
   { "Romance",           "/audio/Romance_Mixado.mp3" },
@@ -76,8 +76,8 @@ constexpr MusicTrack LILA_PLAYLIST[] = {
 };
 
 constexpr MusicTrack KALSING_PLAYLIST[] = {
-  { "Beamer Boy", "/audio/BeamerBoy_Mixado.mp3" },
   { "Harvest Moon", "/audio/Harvest_Moon_Mixado.mp3" },
+  { "Beamer Boy", "/audio/BeamerBoy_Mixado.mp3" },
   { "My Flaws Burn Through My Skin", "/audio/MyFlawsBurn_Mixado.mp3" },
   { "Fuck Love", "/audio/FuckLove_Mixado.mp3" },
   { "Witchblades", "/audio/Witchblades_Mixado.mp3" },
