@@ -551,8 +551,17 @@ void updateFinalAction() {
   stopGif();
 
   if (action == FinalAction::RestartToHome) {
-    bootToHomeAfterRestart = true;
-    ESP.restart();
+stopGif();
+audio.stop();
+
+display.showBlackScreen();
+delay(4000);
+
+display.showBlackScreen(":(");
+delay(3000);
+
+bootToHomeAfterRestart = true;
+ESP.restart();
   } else {
     renderHome();
   }

@@ -130,6 +130,7 @@ void clearImageArea() {
   lcd.fillRect(0, IMAGE_AREA_Y, DISPLAY_WIDTH, IMAGE_AREA_H, COLOR_BG);
 }
 
+
 // Logica de avanco de cursor — identica em redrawTextArea e drawNextChar.
 // Retorna true se precisa quebrar linha antes de desenhar o char em 'i'.
 bool advanceCursor(const char* text, uint16_t i, int32_t& cx, int32_t& cy) {
@@ -324,6 +325,7 @@ void DisplayDevice::showScene(const Scene& scene) {
   Serial.print("[scene] "); Serial.print(scene.id); Serial.print(": "); Serial.println(scene.text);
 }
 
+
 void DisplayDevice::showDialog(
   const char* speaker,
   const char* text,
@@ -360,6 +362,17 @@ void DisplayDevice::showDialog(
       hasQuestion, firstOption, secondOption,
       selectedOption, textComplete
     );
+  }
+}
+
+void DisplayDevice::showBlackScreen(const char* text) {
+  lcd.fillScreen(COLOR_BLACK);
+
+  if (text && text[0]) {
+    lcd.setTextColor(COLOR_BG);
+    lcd.setTextSize(2);
+    lcd.setCursor(20, 120);
+    lcd.print(text);
   }
 }
 
