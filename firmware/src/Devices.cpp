@@ -910,18 +910,27 @@ SceneAction ButtonInput::readAction() {
   }
 
   static uint32_t lastPressAt = 0;
-  constexpr uint32_t DEBOUNCE_MS = 180;
+  static bool wasPressed = false;
+  constexpr uint32_t DEBOUNCE_MS = 200;
+
+  bool confirmPressed  = isPressed(CONFIRM_BUTTON_PIN);
+  bool navigatePressed = isPressed(NAVIGATE_BUTTON_PIN);
+  bool anyPressed      = confirmPressed || navigatePressed;
 
   uint32_t now = millis();
+
+  if (!anyPressed) {
+    wasPressed = false;
+    return SceneAction::None;
+  }
+
+  if (wasPressed) return SceneAction::None;
   if (now - lastPressAt < DEBOUNCE_MS) return SceneAction::None;
 
-  if (isPressed(CONFIRM_BUTTON_PIN)) {
-    lastPressAt = now;
-    return SceneAction::Confirm;
-  }
-  if (isPressed(NAVIGATE_BUTTON_PIN)) {
-    lastPressAt = now;
-    return SceneAction::Navigate;
-  }
+  wasPressed  = true;
+  lastPressAt = now;
+
+  if (confirmPressed)  return SceneAction::Confirm;
+  if (navigatePressed) return SceneAction::Navigate;
   return SceneAction::None;
 }
