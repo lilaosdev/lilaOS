@@ -315,7 +315,7 @@ void DisplayDevice::showBoot(const String& message) {
   drawScreenBorder();
   lcd.setTextFont(1); lcd.setTextSize(2);
   lcd.setTextColor(COLOR_BLACK, COLOR_BG);
-  lcd.setCursor(34, 96); lcd.print("PEDIDO.EXE");
+  lcd.setCursor(34, 96); lcd.print("LILA.OS");
   lcd.setTextSize(1);
   lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
   lcd.setCursor(68, 126); lcd.print(message);
@@ -538,7 +538,7 @@ static void drawSystemShell(const char* title, uint8_t themeId) {
   drawSystemBorder(themeId);
   lcd.setTextFont(1); lcd.setTextSize(1);
   lcd.setTextColor(accent, bg);
-  lcd.setCursor(18, 14); lcd.print("pedido.os / "); lcd.print(themeName(themeId));
+  lcd.setCursor(18, 14); lcd.print("lila.os / "); lcd.print(themeName(themeId));
   lcd.setTextSize(2);
   lcd.setTextColor(fg, bg);
   lcd.setCursor(18, 32); lcd.print(title);
@@ -642,7 +642,7 @@ void DisplayDevice::showStart() {
   drawScreenBorder();
   lcd.setTextFont(1); lcd.setTextSize(2);
   lcd.setTextColor(COLOR_BLACK, COLOR_BG);
-  lcd.setCursor(34, 90); lcd.print("PEDIDO.EXE");
+  lcd.setCursor(34, 90); lcd.print("LILA.OS");
   lcd.setTextSize(1);
   lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
   lcd.setCursor(46, 118); lcd.print("pressione [c]");
@@ -748,14 +748,14 @@ static void drawTerminalShell() {
   lcd.setTextFont(1);
   lcd.setTextSize(1);
   lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
-  lcd.setCursor(16, 14); lcd.print("pedido.os / terminal");
+  lcd.setCursor(16, 14); lcd.print("lila.os / terminal");
 }
 
 static void drawTerminalPrompt(const char* command, bool cursorVisible) {
   lcd.setTextFont(1);
   lcd.setTextSize(1);
   lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
-  lcd.setCursor(16, 34); lcd.print("lila@pedido:~$ ");
+  lcd.setCursor(16, 34); lcd.print("lila@admin:~$ ");
   lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
   lcd.print(command);
   if (cursorVisible) {
