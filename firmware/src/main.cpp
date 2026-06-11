@@ -55,53 +55,50 @@ struct MusicTrack {
 constexpr const char* START_MUSIC_PATH  = "/audio/minhanamorada20s.mp3";
 constexpr const char* DIALOG_MUSIC_PATH = "/audio/papodeundaia.mp3";
 
-constexpr const char* FINAL_YES_TEXT = "eu sabia :)";
-constexpr const char* FINAL_NO_TEXT  = "...  :(";
+constexpr const char* FINAL_YES_TEXT     = "eu sabia :)";
+constexpr const char* FINAL_NO_TEXT      = "...  :(";
 constexpr const char* FINAL_YES_GIF_PATH = "/img/gatinho19gif.gif";
 constexpr const char* FINAL_NO_GIF_PATH  = "/img/rezefinal.gif";
 constexpr uint32_t FINAL_YES_MS = 6000;
 constexpr uint32_t FINAL_NO_MS  = 3600;
 
-constexpr bool DIALOG_RUN_ONCE = true;
-constexpr const char* PREF_NAMESPACE = "pedido";
+constexpr bool DIALOG_RUN_ONCE      = true;
+constexpr const char* PREF_NAMESPACE   = "pedido";
 constexpr const char* PREF_DIALOG_DONE = "dialog_done";
 
 constexpr MusicTrack LILA_PLAYLIST[] = {
   { "Minha Namorada_Dialog", "/audio/papodeundaia.mp3" },
-  { "Minha Namorada",    "/audio/Minha_Namorada_Mixado.mp3" },
-  { "Safeword",          "/audio/Safeword_Mixado.mp3" },
-  { "Romance",           "/audio/Romance_Mixado.mp3" },
-  { "Carta ao Tom 74",   "/audio/Carta74_Mixado.mp3" },
-  { "T.B.H",             "/audio/QWER_Mixado.mp3" },
+  { "Minha Namorada",        "/audio/Minha_Namorada_Mixado.mp3" },
+  { "Safeword",              "/audio/Safeword_Mixado.mp3" },
+  { "Romance",               "/audio/Romance_Mixado.mp3" },
+  { "Carta ao Tom 74",       "/audio/Carta74_Mixado.mp3" },
+  { "T.B.H",                 "/audio/QWER_Mixado.mp3" },
 };
 
 constexpr MusicTrack KALSING_PLAYLIST[] = {
-  { "Harvest Moon", "/audio/Harvest_Moon_Mixado.mp3" },
-  { "Beamer Boy", "/audio/BeamerBoy_Mixado.mp3" },
-  { "My Flaws Burn Through My Skin", "/audio/MyFlawsBurn_Mixado.mp3" },
-  { "Fuck Love", "/audio/FuckLove_Mixado.mp3" },
-  { "Witchblades", "/audio/Witchblades_Mixado.mp3" },
+  { "Harvest Moon",                    "/audio/Harvest_Moon_Mixado.mp3" },
+  { "Beamer Boy",                      "/audio/BeamerBoy_Mixado.mp3" },
+  { "My Flaws Burn Through My Skin",   "/audio/MyFlawsBurn_Mixado.mp3" },
+  { "Fuck Love",                       "/audio/FuckLove_Mixado.mp3" },
+  { "Witchblades",                     "/audio/Witchblades_Mixado.mp3" },
 };
 
-SystemScreen currentScreen   = SystemScreen::Home;
-ThemeId      currentTheme    = ThemeId::Lila;
-uint8_t      homeSelection   = 0;
+SystemScreen currentScreen     = SystemScreen::Home;
+ThemeId      currentTheme      = ThemeId::Lila;
+uint8_t      homeSelection     = 0;
 uint8_t      settingsSelection = 0;
-uint8_t      musicSelection  = 1;
-uint8_t      terminalCommand = 0;
-uint8_t      volumeLevel     = 3;
-uint8_t      musicTrackIndex = 0;
-MusicContext musicContext    = MusicContext::Playlist;
-bool         musicPaused     = false;
-uint32_t     lastMusicRetryAt = 0;
-bool         terminalExecuted = false;
+uint8_t      musicSelection    = 1;
+uint8_t      terminalCommand   = 0;
+uint8_t      volumeLevel       = 3;
+uint8_t      musicTrackIndex   = 0;
+MusicContext musicContext      = MusicContext::Playlist;
+bool         musicPaused       = false;
+uint32_t     lastMusicRetryAt  = 0;
+bool         terminalExecuted      = false;
 bool         terminalCursorVisible = true;
-uint32_t     lastTerminalBlinkAt = 0;
+uint32_t     lastTerminalBlinkAt   = 0;
 
-// --- GIF timing ---
-// GIF so avanca frame quando o intervalo minimo passou,
-// evitando que o SPI seja tomado a cada iteracao do loop.
-constexpr uint32_t GIF_MIN_FRAME_MS = 327; // ~25fps maximo
+constexpr uint32_t GIF_MIN_FRAME_MS = 327;
 uint32_t lastGifFrameAt = 0;
 
 void stopGif();
@@ -148,22 +145,17 @@ float gainForVolume(uint8_t level) {
 }
 
 uint8_t themeByte() { return static_cast<uint8_t>(currentTheme); }
-
-void applyVolume() { audio.setGain(gainForVolume(volumeLevel)); }
+void applyVolume()  { audio.setGain(gainForVolume(volumeLevel)); }
 
 bool playFixedMusic(const char* path, const char* label) {
   if (musicPaused) { audio.stop(); return false; }
   if (!storage.exists(path)) {
-    Serial.print("[music] missing ");
-    Serial.print(label);
-    Serial.print(": ");
-    Serial.println(path);
+    Serial.print("[music] missing "); Serial.print(label);
+    Serial.print(": "); Serial.println(path);
     return false;
   }
-  Serial.print("[music] play ");
-  Serial.print(label);
-  Serial.print(": ");
-  Serial.println(path);
+  Serial.print("[music] play "); Serial.print(label);
+  Serial.print(": "); Serial.println(path);
   audio.play(path);
   return true;
 }
@@ -188,13 +180,13 @@ void playStartMusic() {
 
 void restartDialogMusic() {
   musicContext = MusicContext::Dialog;
-  musicPaused = false;
+  musicPaused  = false;
   audio.stop();
   playFixedMusic(DIALOG_MUSIC_PATH, "dialog");
 }
 
 void restartThemePlaylist() {
-  musicContext = MusicContext::Playlist;
+  musicContext    = MusicContext::Playlist;
   musicTrackIndex = 0;
   audio.stop();
   playCurrentTrack();
@@ -227,13 +219,11 @@ void updateGlobalMusic() {
   uint32_t now = millis();
   if (now - lastMusicRetryAt < 800) return;
   lastMusicRetryAt = now;
-
-  if (musicContext == MusicContext::Start) {
-    playStartMusic();
-  } else if (musicContext == MusicContext::Playlist) {
-    playCurrentTrack();
-  }
+  if (musicContext == MusicContext::Start)    playStartMusic();
+  else if (musicContext == MusicContext::Playlist) playCurrentTrack();
 }
+
+// --- render functions — nenhuma delas toca no audio exceto renderStart ---
 
 void renderStart() {
   currentScreen = SystemScreen::Start;
@@ -243,10 +233,10 @@ void renderStart() {
   playStartMusic();
 }
 
+// renderHome NAO mexe no audio — a musica continua tocando de onde estava
 void renderHome() {
   currentScreen = SystemScreen::Home;
   stopGif();
-  restartThemePlaylist();
   display.showLauncher(homeSelection, themeByte(), currentTrack().title);
 }
 
@@ -283,8 +273,7 @@ void* gifOpenFile(const char* filename, int32_t* size) {
   gifFile = storage.open(filename, "r");
   if (!gifFile) {
     Serial.print("[gif] open failed: "); Serial.println(filename);
-    *size = 0;
-    return nullptr;
+    *size = 0; return nullptr;
   }
   *size = gifFile.size();
   return &gifFile;
@@ -358,7 +347,6 @@ void gifDraw(GIFDRAW* draw) {
     if (runLength > 0) display.drawGifLine(outputX + runStart, outputY, runLength, &line[runStart]);
     return;
   }
-
   for (int16_t x = 0; x < frameW; x++) line[x] = palette[source[srcOffset + x]];
   display.drawGifLine(outputX, outputY, frameW, line);
 }
@@ -377,36 +365,32 @@ struct DialogStep {
 };
 
 DialogStep dialog[] = {
-  { "SISTEMA",  "oi lila, tudo bem?",                                                                    false, "", "", "", "/img/gatinho8bmp.bmp",    false },
-  { "EU",       "desenvolvi esse projeto pensando em uma maneira de presentear uma pessoa tao especial", false, "", "", "", "/img/gatinho7bmp.bmp",    false },
-  { "EU",       "desde muito tempo venho pensando em como de enviar essa mensagem de uma maneira legal", false, "", "", "", "/img/gato5bmp.bmp",    false },
-  { "EU",       "e essa foi a forma que encontrei. espero que goste :)",                                 false, "", "", "", "/img/gato4bmp.bmp",    false },
-  { "EU",       "toda a ideia, estetica, eletronica e codigo dele foram montadas por mim",              false, "", "", "", "/img/gatinho6bmp.bmp", false },
-  { "EU",       "passei algumas madrugadas resolvendo bug sou literalmente ele",              false, "", "", "", "/img/gatinho10bmp.bmp", false },
-  { "EU",       "foi bem complicado mas nenhum codigo ou eletronica se comparou com a", false, "", "", "", "", false },
-  { "EU",       "dificuldade de encontrar as palavras que queria colocar aqui", false, "", "", "", "/img/gatinho15bmp.bmp", false },
-  { "EU",       "e o kalsing desde de 2024 queria muito te contar uma coisa", false, "", "", "", "/img/gatinho11bmp.bmp", false },
-  { "EU",       "mas ele deixou pro kalsing de 2026 falar..", false, "", "", "", "/img/gatinho9bmp.bmp", false },
-  { "EU",       "que eu te amo muito muito muito muito demais da conta", false, "", "", "", "/img/gatinho15bmp.bmp", false },
-
-  { "EU",       "e que por isso queria perguntar se", false, "", "", "", "/img/gatinho12bmp.bmp", false },
-  { "PERGUNTA", "quer ser minha amada pra valer?",                                                                  true, "Sim", "Nao", "", "/img/gatinho17bmp.bmp", false  },
+  { "SISTEMA",  "oi lila, tudo bem?",                                                                    false, "", "", "", "/img/gatinho8bmp.bmp",  false },
+  { "EU",       "desenvolvi esse projeto pensando em uma maneira de presentear uma pessoa tao especial", false, "", "", "", "/img/gatinho7bmp.bmp",  false },
+  { "EU",       "desde muito tempo venho pensando em como de enviar essa mensagem de uma maneira legal", false, "", "", "", "/img/gato5bmp.bmp",     false },
+  { "EU",       "e essa foi a forma que encontrei. espero que goste :)",                                 false, "", "", "", "/img/gato4bmp.bmp",     false },
+  { "EU",       "toda a ideia, estetica, eletronica e codigo dele foram montadas por mim",              false, "", "", "", "/img/gatinho6bmp.bmp",  false },
+  { "EU",       "passei algumas madrugadas resolvendo bug sou literalmente ele",                         false, "", "", "", "/img/gatinho10bmp.bmp", false },
+  { "EU",       "foi bem complicado mas nenhum codigo ou eletronica se comparou com a",                 false, "", "", "", "",                       false },
+  { "EU",       "dificuldade de encontrar as palavras que queria colocar aqui",                         false, "", "", "", "/img/gatinho15bmp.bmp", false },
+  { "EU",       "e o kalsing desde de 2024 queria muito te contar uma coisa",                           false, "", "", "", "/img/gatinho11bmp.bmp", false },
+  { "EU",       "mas ele deixou pro kalsing de 2026 falar..",                                           false, "", "", "", "/img/gatinho9bmp.bmp",  false },
+  { "EU",       "que eu te amo muito muito muito muito demais da conta",                                false, "", "", "", "/img/gatinho15bmp.bmp", false },
+  { "EU",       "e que por isso queria perguntar se",                                                   false, "", "", "", "/img/gatinho12bmp.bmp", false },
+  { "PERGUNTA", "quer ser minha amada pra valer?",                                                       true, "Sim", "Nao", "", "/img/gatinho17bmp.bmp", false },
 };
 
-constexpr uint8_t  DIALOG_COUNT          = sizeof(dialog) / sizeof(dialog[0]);
+constexpr uint8_t  DIALOG_COUNT           = sizeof(dialog) / sizeof(dialog[0]);
 constexpr uint16_t TYPEWRITER_INTERVAL_MS = 50;
 
-uint8_t  currentDialogIndex = 0;
-uint8_t  selectedOption     = 0;
-uint8_t  noAttempts         = 0;
-bool     noBlockedFlash     = false;
+uint8_t  currentDialogIndex  = 0;
+uint8_t  selectedOption      = 0;
+uint8_t  noAttempts          = 0;
+bool     noBlockedFlash      = false;
 uint32_t noBlockedFlashUntil = 0;
-const char* currentNoText = "Nao";
-constexpr const char* NO_BLOCK_MESSAGES[] = {
-  "tem certeza?",
-  "mesmo?",
-  "ok..."
-};
+const char* currentNoText    = "Nao";
+constexpr const char* NO_BLOCK_MESSAGES[] = { "tem certeza?", "mesmo?", "ok..." };
+
 uint16_t visibleChars       = 0;
 uint32_t lastTypewriterTick = 0;
 bool     finalScreen        = false;
@@ -419,9 +403,7 @@ bool     waitingToAdvance = false;
 uint32_t advanceReadyAt   = 0;
 
 uint16_t textLength(const char* text) {
-  uint16_t n = 0;
-  while (text[n]) n++;
-  return n;
+  uint16_t n = 0; while (text[n]) n++; return n;
 }
 
 DialogStep& currentDialog() { return dialog[currentDialogIndex]; }
@@ -435,13 +417,10 @@ void stopGif() {
   if (gifFile)   gifFile.close();
 }
 
-void startGif(const char* path, int16_t x, int16_t y, int16_t w, int16_t h, bool clearDialogImageArea) {
+void startGif(const char* path, int16_t x, int16_t y, int16_t w, int16_t h, bool clearArea) {
   stopGif();
-  if (clearDialogImageArea) display.drawImageArea(nullptr);
-  gifDrawX = x;
-  gifDrawY = y;
-  gifDrawW = w;
-  gifDrawH = h;
+  if (clearArea) display.drawImageArea(nullptr);
+  gifDrawX = x; gifDrawY = y; gifDrawW = w; gifDrawH = h;
   if (!path || !path[0]) return;
   if (!storage.exists(path)) { Serial.print("[gif] not found: "); Serial.println(path); return; }
   if (!gif.open(path, gifOpenFile, gifCloseFile, gifReadFile, gifSeekFile, gifDraw)) {
@@ -452,6 +431,7 @@ void startGif(const char* path, int16_t x, int16_t y, int16_t w, int16_t h, bool
 }
 
 void startDialogGif(const char* path) {
+  // para o audio durante o gif para evitar contenção no SPI do SD
   audio.stop();
   startGif(path, 78, 156, 84, 84, true);
 }
@@ -461,7 +441,6 @@ void startFinalGif(const char* path) {
   startGif(path, 8, 44, 224, 188, false);
 }
 
-// GIF avanca frame apenas se o intervalo minimo passou — evita SPI contínuo.
 void updateGif() {
   if (!gifActive) return;
   uint32_t now = millis();
@@ -503,12 +482,7 @@ void renderDialogFull() {
 void renderNextChar() {
   display.drawNextChar(currentDialog().text, visibleChars, isTextComplete(), currentDialog().hasQuestion);
   if (isTextComplete() && currentDialog().hasQuestion) {
-    display.redrawOptions(
-    currentDialog().firstOption,
-    currentNoText,
-    selectedOption,
-    false
-);
+    display.redrawOptions(currentDialog().firstOption, currentNoText, selectedOption, false);
   }
 }
 
@@ -516,17 +490,15 @@ void enterDialog(uint8_t index) {
   currentScreen      = SystemScreen::Dialog;
   currentDialogIndex = index;
   selectedOption     = 0;
-  noAttempts        = 0;
-  noBlockedFlash    = false;
-  currentNoText     = "Nao";
+  noAttempts         = 0;
+  noBlockedFlash     = false;
+  currentNoText      = "Nao";
   visibleChars       = 0;
   lastTypewriterTick = millis();
   firstFrame         = true;
   waitingToAdvance   = false;
 
-  if (index == 0) {
-    restartDialogMusic();
-  }
+  if (index == 0) restartDialogMusic();
   if (currentDialog().audioPath[0] != '\0') audio.play(currentDialog().audioPath);
 
   renderDialogFull();
@@ -535,14 +507,14 @@ void enterDialog(uint8_t index) {
 }
 
 void showAnswerFinal(bool accepted) {
-  currentScreen = SystemScreen::Final;
-  finalScreen   = true;
+  currentScreen      = SystemScreen::Final;
+  finalScreen        = true;
   markDialogDone();
-  waitingToAdvance = false;
+  waitingToAdvance   = false;
   display.showFinalScene(accepted ? FINAL_YES_TEXT : FINAL_NO_TEXT);
   startFinalGif(accepted ? FINAL_YES_GIF_PATH : FINAL_NO_GIF_PATH);
   pendingFinalAction = accepted ? FinalAction::GoHome : FinalAction::RestartToHome;
-  finalActionAt = millis() + (accepted ? FINAL_YES_MS : FINAL_NO_MS);
+  finalActionAt      = millis() + (accepted ? FINAL_YES_MS : FINAL_NO_MS);
 }
 
 void updateFinalAction() {
@@ -554,18 +526,16 @@ void updateFinalAction() {
   stopGif();
 
   if (action == FinalAction::RestartToHome) {
-stopGif();
-audio.stop();
-
-display.showBlackScreen();
-delay(4000);
-
-display.showBlackScreen(":(");
-delay(3000);
-
-bootToHomeAfterRestart = true;
-ESP.restart();
+    audio.stop();
+    display.showBlackScreen();
+    delay(4000);
+    display.showBlackScreen(":(");
+    delay(3000);
+    bootToHomeAfterRestart = true;
+    ESP.restart();
   } else {
+    // volta pra home sem reiniciar a musica — updateGlobalMusic retoma se necessario
+    musicContext = MusicContext::Playlist;
     renderHome();
   }
 }
@@ -574,28 +544,16 @@ void handleDialogConfirm() {
   if (finalScreen) return;
   if (!isTextComplete()) return;
   if (currentDialog().hasQuestion) {
-    if (selectedOption == 0) {
-      showAnswerFinal(true);
-      return;
-    }
-
+    if (selectedOption == 0) { showAnswerFinal(true); return; }
     if (noAttempts < 2) {
       currentNoText = NO_BLOCK_MESSAGES[noAttempts];
       noAttempts++;
-      noBlockedFlash = true;
+      noBlockedFlash      = true;
       noBlockedFlashUntil = millis() + 1200;
-
-display.redrawOptions(
-  currentDialog().firstOption,
-  currentNoText,
-  selectedOption,
-  true
-);
+      display.redrawOptions(currentDialog().firstOption, currentNoText, selectedOption, true);
       return;
     }
-
     showAnswerFinal(false);
-    return;
   }
 }
 
@@ -604,14 +562,8 @@ void devSkipDialog() {
   if (!isTextComplete()) {
     visibleChars = textLength(currentDialog().text);
     renderDialogFull();
-    if (currentDialog().hasQuestion) {
-      display.redrawOptions(
-    currentDialog().firstOption,
-    currentNoText,
-    selectedOption,
-    false
-);
-    }
+    if (currentDialog().hasQuestion)
+      display.redrawOptions(currentDialog().firstOption, currentNoText, selectedOption, false);
     return;
   }
   if (currentDialogIndex + 1 < DIALOG_COUNT) enterDialog(currentDialogIndex + 1);
@@ -620,12 +572,7 @@ void devSkipDialog() {
 void handleDialogNavigate() {
   if (!finalScreen && currentDialog().hasQuestion && isTextComplete()) {
     selectedOption = selectedOption == 0 ? 1 : 0;
-    display.redrawOptions(
-    currentDialog().firstOption,
-    currentNoText,
-    selectedOption,
-    false
-);
+    display.redrawOptions(currentDialog().firstOption, currentNoText, selectedOption, false);
   }
 }
 
@@ -636,7 +583,6 @@ void updateTypewriter() {
   lastTypewriterTick = now;
   visibleChars++;
   renderNextChar();
-
   if (isTextComplete() && !currentDialog().hasQuestion) {
     waitingToAdvance = true;
     advanceReadyAt   = millis() + DIALOG_AUTO_ADVANCE_MS;
@@ -653,36 +599,29 @@ void updateDialogAutoAdvance() {
 void updateNoButtonFlash() {
   if (!noBlockedFlash) return;
   if (millis() < noBlockedFlashUntil) return;
-
   noBlockedFlash = false;
-
-display.redrawOptions(
-  currentDialog().firstOption,
-  currentNoText,
-  selectedOption,
-  false
-);
+  display.redrawOptions(currentDialog().firstOption, currentNoText, selectedOption, false);
 }
 
 void updateTerminalCursor() {
   if (currentScreen != SystemScreen::Terminal || terminalExecuted) return;
   uint32_t now = millis();
   if (now - lastTerminalBlinkAt < 500) return;
-  lastTerminalBlinkAt = now;
+  lastTerminalBlinkAt   = now;
   terminalCursorVisible = !terminalCursorVisible;
   renderTerminal();
 }
 
-// --- Handlers de telas do sistema ---
+// --- Handlers ---
 
 void handleHomeConfirm() {
   if (homeSelection == 0)      renderMusic();
   else if (homeSelection == 1) renderSettings();
   else {
-    terminalCommand = 0;
-    terminalExecuted = false;
-    terminalCursorVisible = true;
-    lastTerminalBlinkAt = millis();
+    terminalCommand        = 0;
+    terminalExecuted       = false;
+    terminalCursorVisible  = true;
+    lastTerminalBlinkAt    = millis();
     renderTerminal();
   }
 }
@@ -710,13 +649,10 @@ void handleMusicConfirm() {
 }
 
 void handleTerminalConfirm() {
-  if (!terminalExecuted && terminalCommand == 2) {
-    renderHome();
-    return;
-  }
-  terminalExecuted = !terminalExecuted;
+  if (!terminalExecuted && terminalCommand == 2) { renderHome(); return; }
+  terminalExecuted      = !terminalExecuted;
   terminalCursorVisible = true;
-  lastTerminalBlinkAt = millis();
+  lastTerminalBlinkAt   = millis();
   renderTerminal();
 }
 
@@ -737,7 +673,7 @@ void handleNavigate() {
   switch (currentScreen) {
     case SystemScreen::Home:
       homeSelection = (homeSelection + 1) % 3;
-      renderHome();
+      renderHome(); // so redesenha a tela, nao toca musica
       break;
     case SystemScreen::Settings:
       settingsSelection = (settingsSelection + 1) % 3;
@@ -750,7 +686,7 @@ void handleNavigate() {
     case SystemScreen::Terminal:
       terminalCommand = (terminalCommand + 1) % (terminalExecuted ? 2 : 3);
       terminalCursorVisible = true;
-      lastTerminalBlinkAt = millis();
+      lastTerminalBlinkAt   = millis();
       renderTerminal();
       break;
     case SystemScreen::Dialog:
@@ -787,12 +723,12 @@ void setup() {
   AppConfig config = loadRemoteConfig();
   display.showBoot(config.message);
 
-  if (config.mode == RemoteMode::Locked) {
-    lockDevice("bloqueado por configuracao remota");
-  }
+  if (config.mode == RemoteMode::Locked) lockDevice("bloqueado por configuracao remota");
 
   if (bootToHomeAfterRestart || isDialogDone()) {
     bootToHomeAfterRestart = false;
+    musicContext = MusicContext::Playlist;
+    playCurrentTrack();
     renderHome();
     return;
   }
@@ -802,57 +738,29 @@ void setup() {
 }
 
 void loop() {
-  // 1. audio primeiro — maxima prioridade, sem nada antes que bloqueie
   audio.update();
 
-  // 2. input — dev phase overrides & botões físicos
   if (Serial.available()) {
     char devInput = Serial.peek();
-    if (devInput == 'b' || devInput == 'B') {
-      Serial.read();
-      renderHome();
-    } else if (devInput == 'u' || devInput == 'U') {
-      Serial.read();
-      renderStart();
-    } else if (devInput == 'l' || devInput == 'L') {
-      Serial.read();
-      devSkipDialog();
-    } else if (devInput == 'r' || devInput == 'R') {
-      Serial.read();
-      resetDialogDone();
-      renderStart();
-    }
+    if      (devInput == 'b' || devInput == 'B') { Serial.read(); renderHome(); }
+    else if (devInput == 'u' || devInput == 'U') { Serial.read(); renderStart(); }
+    else if (devInput == 'l' || devInput == 'L') { Serial.read(); devSkipDialog(); }
+    else if (devInput == 'r' || devInput == 'R') { Serial.read(); resetDialogDone(); renderStart(); }
   }
 
-  // Processamento normal dos botões (físicos ou comandos 'c', 'n', 'i')
   SceneAction action = buttons.readAction();
-  if (action == SceneAction::Confirm) {
-    handleConfirm();
-  } else if (action == SceneAction::Navigate) {
-    handleNavigate();
-  } else if (action == SceneAction::OpenHome) {
-    renderHome();
-  }
+  if      (action == SceneAction::Confirm)  handleConfirm();
+  else if (action == SceneAction::Navigate) handleNavigate();
+  else if (action == SceneAction::OpenHome) renderHome();
 
-  // 3. typewriter — so desenha um char por iteracao, custo minimo de SPI
   updateTypewriter();
-
-  // 4. avanço automático entre dialogs normais
   updateDialogAutoAdvance();
   updateNoButtonFlash();
   updateFinalAction();
 
-  // 5. gif — so avanca frame se o intervalo minimo passou (GIF_MIN_FRAME_MS)
   if (currentScreen == SystemScreen::Dialog || currentScreen == SystemScreen::Final) updateGif();
 
-  // 6. cursor do terminal fake
   updateTerminalCursor();
-
-  // 7. musica ambiente — verifica se precisa reiniciar track
   updateGlobalMusic();
-
-  // 8. audio de novo no final — garante que o buffer nao seca entre frames
   audio.update();
-
-  // sem delay fixo — loop roda na velocidade maxima do ESP32
 }

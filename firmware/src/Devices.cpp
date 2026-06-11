@@ -909,7 +909,20 @@ SceneAction ButtonInput::readAction() {
     if (input == 'n') return SceneAction::Navigate;
     if (input == 'i') return SceneAction::OpenHome;
   }
-  if (isPressed(CONFIRM_BUTTON_PIN))  { delay(180); return SceneAction::Confirm; }
-  if (isPressed(NAVIGATE_BUTTON_PIN)) { delay(180); return SceneAction::Navigate; }
+
+  static uint32_t lastPressAt = 0;
+  constexpr uint32_t DEBOUNCE_MS = 180;
+
+  uint32_t now = millis();
+  if (now - lastPressAt < DEBOUNCE_MS) return SceneAction::None;
+
+  if (isPressed(CONFIRM_BUTTON_PIN)) {
+    lastPressAt = now;
+    return SceneAction::Confirm;
+  }
+  if (isPressed(NAVIGATE_BUTTON_PIN)) {
+    lastPressAt = now;
+    return SceneAction::Navigate;
+  }
   return SceneAction::None;
 }
