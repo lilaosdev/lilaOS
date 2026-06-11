@@ -69,6 +69,7 @@ constexpr const char* PREF_DIALOG_DONE = "dialog_done";
 constexpr MusicTrack LILA_PLAYLIST[] = {
   { "Minha Namorada_Dialog", "/audio/papodeundaia.mp3" },
   { "Minha Namorada",        "/audio/Minha_Namorada_Mixado.mp3" },
+  { "Remember my Name",        "/audio/Mitski_Mixado.mp3" },
   { "Safeword",              "/audio/Safeword_Mixado.mp3" },
   { "Romance",               "/audio/Romance_Mixado.mp3" },
   { "Carta ao Tom 74",       "/audio/Carta74_Mixado.mp3" },
@@ -372,7 +373,7 @@ DialogStep dialog[] = {
   { "EU",       "toda a ideia, estetica, eletronica e codigo dele foram montadas por mim",              false, "", "", "", "/img/gatinho6bmp.bmp",  false },
   { "EU",       "passei algumas madrugadas resolvendo bug sou literalmente ele",                         false, "", "", "", "/img/gatinho10bmp.bmp", false },
   { "EU",       "foi bem complicado mas nenhum codigo ou eletronica se comparou com a",                 false, "", "", "", "",                       false },
-  { "EU",       "dificuldade de encontrar as palavras que queria colocar aqui",                         false, "", "", "", "/img/gatinho15bmp.bmp", false },
+  { "EU",       "dificuldade de encontrar as palavras que queria colocar aqui",                         false, "", "", "", "/img/gatinho18bmp.bmp", false },
   { "EU",       "e o kalsing desde de 2024 queria muito te contar uma coisa",                           false, "", "", "", "/img/gatinho11bmp.bmp", false },
   { "EU",       "mas ele deixou pro kalsing de 2026 falar..",                                           false, "", "", "", "/img/gatinho9bmp.bmp",  false },
   { "EU",       "que eu te amo muito muito muito muito demais da conta",                                false, "", "", "", "/img/gatinho15bmp.bmp", false },

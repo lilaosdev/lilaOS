@@ -645,7 +645,7 @@ void DisplayDevice::showStart() {
   lcd.setCursor(34, 90); lcd.print("LILA.OS");
   lcd.setTextSize(1);
   lcd.setTextColor(COLOR_PINK_DARK, COLOR_BG);
-  lcd.setCursor(46, 118); lcd.print("pressione [c]");
+  lcd.setCursor(46, 118); lcd.print("pressione o da esquerda");
   lcd.setCursor(54, 132); lcd.print("para iniciar");
 }
 
@@ -696,7 +696,6 @@ void DisplayDevice::showSettings(uint8_t selectedRow, uint8_t volumeLevel, uint8
   uint16_t accent = systemAccent(themeId);
   lcd.setTextFont(1); lcd.setTextSize(1);
   lcd.setTextColor(accent, bg);
-  lcd.setCursor(20, 206); lcd.print("c altera / abre  n navega");
 }
 
 void DisplayDevice::showMusicPlayer(
@@ -793,7 +792,7 @@ static void drawTerminalNeofetch() {
   lcd.setCursor(88, 100); lcd.print("DISPLAY: ST7789");
   lcd.setCursor(88, 112); lcd.print("RES: 240x240");
   lcd.setCursor(88, 124); lcd.print("AUDIO: MAX98357A");
-  lcd.setCursor(88, 136); lcd.print("FS: microSD");
+  lcd.setCursor(88, 136); lcd.print("FS: microSD 8GB");
   lcd.setCursor(88, 148); lcd.print("UI: LovyanGFX");
   lcd.setCursor(88, 160); lcd.print("BTN: NAV + OK");
 }
@@ -804,12 +803,12 @@ static void drawTerminalStats() {
   lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
   lcd.setCursor(18, 62); lcd.print("STATS");
   lcd.setTextColor(COLOR_TERM_TEXT, COLOR_TERM_BG);
-  lcd.setCursor(18, 82); lcd.print("linhas de codigo: ...");
-  lcd.setCursor(18, 98); lcd.print("horas de trabalho: ...");
-  lcd.setCursor(18, 114); lcd.print("testes de hardware: ...");
-  lcd.setCursor(18, 130); lcd.print("musicas escolhidas: ...");
-  lcd.setCursor(18, 146); lcd.print("mensagens escritas: ...");
-  lcd.setCursor(18, 162); lcd.print("carinho investido: muito");
+  lcd.setCursor(18, 82); lcd.print("linhas de codigo: 3386");
+  lcd.setCursor(18, 98); lcd.print("commits: 26");
+  lcd.setCursor(18, 114); lcd.print("bugs resolvidos: todos (eu espero)");
+  lcd.setCursor(18, 130); lcd.print("horas debugando: nem sei mais");
+  lcd.setCursor(18, 146); lcd.print("carinho investido: muito");
+  lcd.setCursor(18, 162); lcd.print("musicas escolhidas: 10");
 }
 
 void DisplayDevice::showTerminal(uint8_t commandIndex, bool executed, bool cursorVisible, uint8_t themeId) {
